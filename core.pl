@@ -197,6 +197,10 @@ while (my $input = <$sock>) {
 						if (isowner($from)) { restart($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
 					}
+					elsif ($cmd eq 'nick') {
+                        if (isowner($from)) { nick($args);
+                        } else { cmd_failure($nick, $cmd); }
+					}
 					elsif ($cmd eq 'reload') {
 						if (isowner($from)) {
 							loadconfig();
@@ -462,7 +466,7 @@ sub help {
 	my ($dst, $from) = @_;
 	my $acl_none = "ATS BAN CALC DTS KICK KB SAY LAST ACT PING ENVINFO TRIGGER UNBAN WHOAMI";
     my $acl_admin = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ENVINFO ADMIN JOIN TRIGGER PART UNBAN WHOAMI";
-    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD WHOAMI";
+    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB NICK  PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD WHOAMI";
 	
 	my $acl = 'None';
 	if ((!isadmin($from)) && (!isowner($from))) # normal
@@ -536,7 +540,10 @@ sub help_cmd {
 		}
 	}
 }
-
+sub nick {
+	my $newnick = shift;
+	senddata("NICK $newnick");
+}
 sub get_timestamp {
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
    if ($mon < 10) { $mon = "0$mon"; }

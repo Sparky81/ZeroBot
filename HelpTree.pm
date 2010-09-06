@@ -66,6 +66,7 @@ our %helptree_q = (
     KICK => 'Kick a user from a channel.',
     KB => 'Kick and Ban a user from a channel.',
     RAW => 'Print raw data to the IRC Server.',
+	NICK => 'Change bot\'s current nick.',
     SAY => 'PRIVMSG a channel with data.',
     ACT => 'Equivalent to /me sending to a channel.',
     ADMIN => 'Checks to see if user is an admin (you are if you\'re seeing this)',
