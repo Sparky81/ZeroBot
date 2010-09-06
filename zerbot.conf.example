@@ -9,17 +9,15 @@
 ####################################
 # server configuration
 server:irc.zeronet.us
-port:6667
-ssl:false
-nick:ZeroBot
+port:6697
+ssl:true
+nick:OneBot
 ident:ZeroBot
 # the bot's home channel
 channel:#ZeroBot
 # password to identify to nickserv
 nickserv:NickServPass
 # command prefix trigger
-trigger:~
+trigger:*
 # owner and admin lines - add as many lines as you like.
-owner:*!sparky@staff.zeronet.us
-admin:*!*@k
-admin:*!*@bitch.niggaplz.backup
+owner:*!*@bitch.niggaplz.backup

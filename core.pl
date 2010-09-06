@@ -29,7 +29,7 @@ use IO::Socket;
 my $sock;
 if ($config->{SSL})
 {
-	#use IO::Socket::SSL;
+	use IO::Socket::SSL;
 	$sock = IO::Socket::SSL->new(
 		PeerAddr	=>	$config->{IRCserver},
 		PeerPort	=>	$config->{IRCport},
@@ -91,11 +91,10 @@ while (my $input = <$sock>) {
 			if ($target =~ m/^\#/) { # if this is a channel, otherwise it's a private message
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
-					if ($cmd =~ m/^help$/i) {
-						help($nick, $from);
-					}
-					if ($cmd eq 'whatis') {
-						help_cmd($nick, $from, $args);
+					if ($cmd =~ 'help') {
+					if (!defined $args) {
+                            help($nick, $from);
+                        } else { help_cmd($nick, $from, $args); }
 					}	
 					elsif ($cmd eq 'say') {
 						privmsg($channel,$args);
@@ -461,11 +460,10 @@ sub help {
 	my ($dst, $from) = @_;
 	my $acl_none = "ATS BAN CALC DTS KICK KB SAY LAST ACT PING ENVINFO TRIGGER UNBAN";
     my $acl_admin = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ENVINFO ADMIN JOIN TRIGGER PART UNBAN";
-    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART";
+    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD";
 	
 	my $acl = 'None';
-    
-	if ((!isadmin($from)) && (!isowner($from))) # normal user
+	if ((!isadmin($from)) && (!isowner($from))) # normal
     {
 		$acl = 'None';
     }
@@ -473,7 +471,7 @@ sub help {
     {
     	$acl = 'Admin';
     }
-    elsif ((isadmin($from)) && (isowner($from))) # owner!
+    elsif (isowner($from)) # owner!
     {
          $acl = 'Owner';
     }
@@ -561,6 +559,7 @@ sub lastcmd {
 	while(<LOG>) {
 		$last = $_ if eof;
 	}
+	close(LOG);
 	privmsg($dst, $last);
 }
 sub cmd_failure {
