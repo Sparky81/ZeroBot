@@ -179,10 +179,12 @@ while (my $input = <$sock>) {
 							slog($nick.":TRIGGER:".$args);
 						}
 					}
-					elsif ($cmd eq 'admin') {
-						if (isadmin($from)) {
-							privmsg($channel,'You are an administrator because your mask matches a mask in my configuration.');
-						} else { privmsg($channel,'You are not an administrator.'); }
+					elsif ($cmd eq 'whoami') {
+						if ((isadmin($from)) && (!isowner($from))) { notice($nick, "You are an administrator.");
+						} elsif (isowner($from)) { notice($nick, "You are a bot owner.");
+						} elsif ((!isadmin($from)) && (!isowner($from)) && (!isop($channel,$nick))) { 
+							privmsg($channel, "You have no access on the bot or on this channel.");
+						}
 					}
 					elsif ($cmd eq 'last') {
 						lastcmd($channel);
@@ -458,9 +460,9 @@ sub userinfo {
 }
 sub help {
 	my ($dst, $from) = @_;
-	my $acl_none = "ATS BAN CALC DTS KICK KB SAY LAST ACT PING ENVINFO TRIGGER UNBAN";
-    my $acl_admin = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ENVINFO ADMIN JOIN TRIGGER PART UNBAN";
-    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD";
+	my $acl_none = "ATS BAN CALC DTS KICK KB SAY LAST ACT PING ENVINFO TRIGGER UNBAN WHOAMI";
+    my $acl_admin = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ENVINFO ADMIN JOIN TRIGGER PART UNBAN WHOAMI";
+    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD WHOAMI";
 	
 	my $acl = 'None';
 	if ((!isadmin($from)) && (!isowner($from))) # normal

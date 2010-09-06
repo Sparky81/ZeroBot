@@ -9,6 +9,7 @@ our %helptree = (
 	HELP => 'View more information on a command.',
 	PING => 'For users to check if they\'re still alive',
 	ACT => 'Equivalent to /me sending to a channel.',
+    WHOAMI => 'View your access level in the channel and/or bot.',
 	ENVINFO => 'View working environment information',
 );
 our %helptree_o = (
@@ -18,6 +19,7 @@ our %helptree_o = (
     HELP => 'View more information on a command.',
     DTS => 'Delete a word association.',
     KICK => 'Kick a user from a channel.',
+    WHOAMI => 'View your access level in the channel and/or bot.',
     KB => 'Kick and Ban a user from a channel.',
     SAY => 'PRIVMSG a channel with data.',
     LAST => 'View last command sent to the bot.',
@@ -41,6 +43,7 @@ our %helptree_a = (
     KICK => 'Kick a user from a channel.',
     KB => 'Kick and Ban a user from a channel.',
     RAW => 'Print raw data to the IRC Server.',
+    WHOAMI => 'View your access level in the channel and/or bot.',
     SAY => 'PRIVMSG a channel with data.',
     ACT => 'Equivalent to /me sending to a channel.',
 	ADMIN => 'Checks to see if user is an admin (you are if you\'re seeing this)',
@@ -72,6 +75,7 @@ our %helptree_q = (
     TRIGGER => 'Change command trigger. (Current Trigger: '.$config->{trigger}.')',
 	DIE => 'Force the bot to quit from the server and end its PID ('.$$.')',
 	RESTART => 'Force the bot to disconnect from the server, and restart itself',
+	WHOAMI => 'View your access level in the channel and/or bot.',
 	RELOAD => 'Reload the configuration file and update admins, owners, etc.'
 );
 
