@@ -58,7 +58,8 @@ while (my $input = <$sock>) {
         last;
     }
     elsif ($input =~ /433/) {
-        die "Nickname is already in use.";
+        $me = $me.'-';
+		nick($me);
     }
 }
 
