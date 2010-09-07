@@ -104,15 +104,22 @@ while (my $input = <$sock>) {
                         } else { help_cmd($nick, $from, $args); }
 					}	
 					elsif ($cmd eq 'say') {
-						privmsg($channel,$args);
-						slog($nick.":SAY:".$args);
+					if (!defined($args)) { cmd_needmoreparams($nick,$cmd);
+					} else {
+							privmsg($channel,$args);
+							slog($nick.":SAY:".$args);
+						}
 					}
 					elsif ($cmd eq 'act') {
-						act($channel, $args);
-						slog($nick.":ACT:".$args);
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} else {
+							act($channel, $args);
+							slog($nick.":ACT:".$args);
+						}
 					}
-					elsif ($cmd eq 'raw') {	
-						if ((isadmin($from)) or (isowner($from))) {
+					elsif ($cmd eq 'raw') {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif ((isadmin($from)) or (isowner($from))) {
 							senddata($args);
 							slog($nick.":RAW:".$args);
 						}
@@ -121,25 +128,29 @@ while (my $input = <$sock>) {
 						envinfo($channel);
 					}
 					elsif ($cmd eq 'kick') {
-						if (isop($nick,$channel)) {
+						if (!defined($args)) { kick($channel,$nick);
+						} elsif  (isop($nick,$channel)) {
 							kick($channel,$args);
 							slog($nick.":KICK:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd eq 'kickban') {
-						if (isop($nick,$channel)) {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isop($nick,$channel)) {
 							kickban($channel,$args);
 							slog($nick.":KICKBAN:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd eq 'ban') {
-						if (isop($nick,$channel)) {
+						if (!defined($args)) { cmd_needmoreparms($nick, $cmd);
+						} elsif (isop($nick,$channel)) {
 							ban($channel,$args);
 							slog($nick.":BAN:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd eq 'join') {
-						if ((isadmin($from)) or (isowner($from))) {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif ((isadmin($from)) or (isowner($from))) {
 							netjoin($args);
 							notice($nick,"I have joined: $args");
 							slog($nick.":JOIN:".$args);
@@ -167,13 +178,15 @@ while (my $input = <$sock>) {
 						}
 					}
 					elsif ($cmd eq 'unban') {
-						if (isop($nick,$channel)) {
+					if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isop($nick,$channel)) {
 							unban($channel,$args);
 							slog($nick.":UNBAN:".$args);
 						}
 					}
 					elsif ($cmd eq 'ats') {
-						if (isop($nick,$channel)) {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isop($nick,$channel)) {
 							my @tt = split(' ',$args,2);
 							my $t = $tt[0];
 							my $ttt = $tt[1];
@@ -183,18 +196,28 @@ while (my $input = <$sock>) {
 						}
 					}
 					elsif ($cmd eq 'uinfo') {
-						if (isop($nick,$channel)) {
+						if (!defined($args)) {
+							cmd_needmoreparams($nick, $cmd);
+						} elsif (isop($nick,$channel)) {
 							privmsg($channel,userinfo($channel,$args));
 							slog($nick.":UINFO:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd eq 'dts') {
-						delete $cmd_{lc($args)};
-						notice($nick,"I have deleted all responses to the command you requested.");
-						slog($nick.":DTS:".$args);
+						if (!defined($args))
+						{
+							cmd_needmoreparams($nick, $cmd);
+						} else {
+							delete $cmd_{lc($args)};
+							notice($nick,"I have deleted all responses to the command you requested.");
+							slog($nick.":DTS:".$args);
+						}
 					}
 					elsif ($cmd eq 'trigger') {
-						if (isop($nick,$channel)) {
+					if (!defined($args))
+					{
+						cmd_needmoreparams($nick, $cmd);
+					} elsif (isop($nick,$channel)) {
 							privmsg($channel,"$nick: k.") if length $args eq 1;
 							$config->{trigger} = $args;
 							slog($nick.":TRIGGER:".$args);
@@ -219,7 +242,9 @@ while (my $input = <$sock>) {
 						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'nick') {
-                        if (isowner($from)) { nick($args);
+					if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+					} elsif (isowner($from)) { 
+						nick($args);
                         } else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'reload') {
