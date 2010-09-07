@@ -465,10 +465,14 @@ sub userinfo {
 }
 sub help {
 	my ($dst, $from) = @_;
-	my $acl_none = "ATS BAN CALC DTS KICK KB SAY LAST ACT PING ENVINFO TRIGGER UNBAN WHOAMI";
-    my $acl_admin = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB PING RAW SAY ACT ENVINFO ADMIN JOIN TRIGGER PART UNBAN WHOAMI";
-    my $acl_owner = "ATS BAN CALC CYCLE DTS LAST JOIN KICK KB NICK  PING RAW SAY ACT ADMIN ENVINFO JOIN TRIGGER PART UNBAN DIE RESTART RELOAD WHOAMI";
+	my @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+    my @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
+    my @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
 	
+	@acl_none = sort { uc($a) cmp uc($b) } @acl_none;
+	@acl_admin = sort { uc($a) cmp uc($b) } @acl_admin;
+	@acl_owner = sort{ uc($a) cmp uc($b) } @acl_owner;
+
 	my $acl = 'None';
 	if ((!isadmin($from)) && (!isowner($from))) # normal
     {
@@ -486,9 +490,9 @@ sub help {
 	notice($dst, "Your ACL: \002$acl\002.");
     notice($dst, "You have access to the following commands. To view more about each command, use ".$config->{trigger}."whatis \002COMMAND\002.");
 	
-	if ($acl eq 'None') { notice($dst, $acl_none); }
-	elsif ($acl eq 'Admin') { notice($dst, $acl_admin); }
-	elsif ($acl eq 'Owner') { notice($dst, $acl_owner); }
+	if ($acl eq 'None') { notice($dst, "@acl_none"); }
+	elsif ($acl eq 'Admin') { notice($dst, "@acl_admin"); }
+	elsif ($acl eq 'Owner') { notice($dst, "@acl_owner"); }
 }
 sub help_cmd {
 	my ($dst, $host, $cmd) = @_;
