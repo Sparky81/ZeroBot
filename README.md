@@ -11,10 +11,10 @@ ZeroBot
 
 
 *	ZeroBot has 1 dependency: Moose. The following line should install Moose:
-   	$ cpan -i Moose
-	(You may need root to do this)
+[code] 	$ cpan -i Moose
+	- (You may need root to do this)
 
 *	Once installed:
-   	$ ./core.pl &
+[code] 	$ ./core.pl &
 	to start the bot.
 
