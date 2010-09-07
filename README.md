@@ -10,11 +10,8 @@ ZeroBot
  	- SSL:  6697
 
 
-*	ZeroBot has 1 dependency: Moose. The following line should install Moose:
-[code] 	$ cpan -i Moose
-	- (You may need root to do this)
+*	ZeroBot has 1 dependency: Moose. The following line should install Moose (you may need to su as root):
+ 	- $ cpan -i Moose
 
-*	Once installed:
-[code] 	$ ./core.pl &
-	to start the bot.
-
+*	Once installed use this to start the bot:
+	- $ ./core.pl &
