@@ -22,6 +22,12 @@ my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
 my $YES;
+
+our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
+our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
+our @modlist = ();
+
 # We will use a raw socket to connect to the IRC server.
 use IO::Socket;
 
@@ -464,10 +470,10 @@ sub userinfo {
 	return '?';
 }
 sub help {
-	our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-	our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
-	our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
-	our @modlist = ();
+#	our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+#	our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
+#	our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
+#	our @modlist = ();
 	my ($dst, $from) = @_;
 	@acl_none = sort { uc($a) cmp uc($b) } @acl_none;
 	@acl_admin = sort { uc($a) cmp uc($b) } @acl_admin;
@@ -595,6 +601,37 @@ sub envinfo {
 	privmsg($dst, "Uptime: ".$env->uptime);
 	privmsg($dst, "PID: ".$env->pid);
 	privmsg($dst, "Working Path: ".$env->path);
+}
+sub modinit {
+	my ($acl, $name, $desc) = @_;
+	if ($acl eq 'None')
+	{
+		$ht_none->{"$name"} = "$desc";
+		$ht_admin->{"$name"} = "$desc";
+		$ht_owner->{"$name"} = "$desc";
+
+		unshift(@acl_none, "$name");
+		unshift(@acl_admin, "$name");
+		unshift(@acl_owner, "$name");
+	}
+
+	if ($acl eq 'Admin')
+	{
+        $ht_admin->{"$name"} = "$desc";
+        $ht_owner->{"$name"} = "$desc";
+		
+		unshift(@acl_admin, "$name");
+        unshift(@acl_owner, "$name");
+
+	}
+
+	if ($acl eq 'Owner')
+	{
+        $ht_owner->{"$name"} = "$desc";
+        unshift(@acl_owner, "$name");
+
+	}
+		
 }
 sub loadconfig {
 	open(CONFIG,'zerobot.conf') or die "Configuration could not be read\n";

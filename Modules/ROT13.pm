@@ -9,13 +9,10 @@ my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
 
-$ht_none->{'ROT13'} = 'Convert normal text to ROT13, and vice versa';
-$ht_admin->{'ROT13'} = 'Convert normal text to ROT13, and vice versa';
-$ht_owner->{'ROT13'} = 'Convert normal text to ROT13, and vice versa';
+# Access Level, Command Name, Command Description
+# Access Levels: None, Admin, Owner
 
-pop(@acl_none, "ROT13");
-pop(@acl_admin, "ROT13");
-pop(@acl_owner, "ROT13");
+modinit('None',	'ROT13', 'Convert normal text to ROT13 and vice versa');
 
 # Add to modlist to make sure it gets added:
 pop(@modlist, "ROT13");
@@ -24,7 +21,7 @@ pop(@modlist, "ROT13");
  
 sub txt2rot {
 	my ($dst, $txt) = @_;
-	if (my($rot13) == $txt) {
+	if (my($rot13) = $txt) {
 		my $rot13 =~ tr[a-zA-Z][n-za-mN-ZA-M];
 	}
 	return $rot13;
