@@ -15,8 +15,9 @@ ssl:true
 nick:ZeroBot
 ident:ZeroBot
 
-# the bot's home channel
+# define the channels you wish the bot to join on connect
 channel:#ZeroBot
+channel:#MyDen
 
 # password to identify to nickserv
 nickserv:NickServPass

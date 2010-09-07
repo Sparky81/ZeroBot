@@ -15,7 +15,7 @@ use warnings;
 require HelpTree;
 require Class::Environment;
 my $env = Environment->new();
-my (@admin,@owner,$config);
+my (@admin,@owner,@channels,$config);
 loadconfig();
 my $me = $config->{IRCnick};
 my $ht_none = HelpTree::hnormal();
@@ -59,7 +59,7 @@ my (%user,%channel,%cmd_);
 while (my $input = <$sock>) {
     $YES = 1;
     if ($input =~ /004/) {
-	netjoin($config->{homechan});
+		autojoin();
 	if ($config->{ns_pass}) { privmsg('NickServ','IDENTIFY '.$config->{ns_pass}); }
         last;
     }
@@ -145,11 +145,25 @@ while (my $input = <$sock>) {
 							slog($nick.":JOIN:".$args);
 						}
 					}
+					elsif ($cmd eq 'wallchan') {
+						if (!defined($args)) 
+						{ 
+							cmd_needmoreparams($nick, $cmd); 
+						} elsif ((isadmin($from)) or (isowner($from))) {
+								wallchan("$args");
+								slog($nick.":WALLCHAN:".$args);
+						}
+					}
 					elsif ($cmd eq 'part') {
-						if ((isadmin($from)) or (isowner($from))) {
-							part($args);
-							notice($nick,"I have parted: $args");
-							slog($nick.":PART:".$args);
+					if (!defined($args))
+					{
+						part($channel);
+						slog($nick.":PART:<No reason given>");
+					
+					} elsif ((isadmin($from)) or (isowner($from))) {
+								part($args);
+								notice($nick,"I have parted: $args");
+								slog($nick.":PART:".$args);
 						}
 					}
 					elsif ($cmd eq 'unban') {
@@ -397,16 +411,19 @@ sub part {
 	senddata("PART $chan");
 }
 sub netjoin {
-	my $chan = shift;
+	my $chan = shift; 
 	senddata("JOIN $chan");
+#	push(@channels, $chan);
 }
 sub signoff {
 	my ($dst, $why) = @_;
-	senddata("QUIT :\002DIE\002 used by \002$dst\002 ($why)");
+	if (!defined($why)) { senddata("QUIT :\002DIE\002 used by \002$dst\002 (No reason given.)"); 
+	} else { senddata("QUIT :\002DIE\002 used by \002$dst\002 ($why)"); }
 }
 sub restart {
 	my ($dst, $why) = @_;
-	senddata("QUIT :\002RESTART\002 used by \002$dst\002 ($why)");
+	if (!defined($why)) { senddata("QUIT :\002RESTART\002 used by \002$dst\002 (No reason given.)");
+	} else { senddata("QUIT :\002RESTART\002 used by \002$dst\002 ($why)"); }
 	sleep(5);
 	system('perl core.pl &');
 }
@@ -470,10 +487,6 @@ sub userinfo {
 	return '?';
 }
 sub help {
-#	our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-#	our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
-#	our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
-#	our @modlist = ();
 	my ($dst, $from) = @_;
 	@acl_none = sort { uc($a) cmp uc($b) } @acl_none;
 	@acl_admin = sort { uc($a) cmp uc($b) } @acl_admin;
@@ -602,6 +615,11 @@ sub envinfo {
 	privmsg($dst, "PID: ".$env->pid);
 	privmsg($dst, "Working Path: ".$env->path);
 }
+sub cmd_needmoreparams {
+	my ($dst, $cmd) = @_;
+	$cmd = uc($cmd);
+	notice($dst, "Not enough parameters for \002$cmd\002");
+}
 sub modinit {
 	my ($acl, $name, $desc) = @_;
 	if ($acl eq 'None')
@@ -632,6 +650,17 @@ sub modinit {
 
 	}
 		
+}
+sub autojoin {
+	foreach (@channels) {
+		netjoin($_);
+	}
+}
+sub wallchan {
+	my $wall = shift;
+	foreach (@channels) {
+		privmsg($_, $wall);
+	}
 }
 sub loadconfig {
 	open(CONFIG,'zerobot.conf') or die "Configuration could not be read\n";
@@ -669,7 +698,8 @@ sub loadconfig {
 			next CONFPARSE;
 		}
 		if ($line =~ m/^channel:(.+)$/) {
-			$config->{'homechan'} = $1;
+		#	$config->{'homechan'} = $1;
+			push(@channels, $1);
 			next CONFPARSE;
 		}
 		if ($line =~ m/^nickserv:(.+)$/) {
