@@ -488,7 +488,7 @@ sub help {
     }
 	
 	notice($dst, "Your ACL: \002$acl\002.");
-    notice($dst, "You have access to the following commands. To view more about each command, use ".$config->{trigger}."whatis \002COMMAND\002.");
+    notice($dst, "You have access to the following commands. To view more about each command, use ".$config->{trigger}."help \002COMMAND\002.");
 	
 	if ($acl eq 'None') { notice($dst, "@acl_none"); }
 	elsif ($acl eq 'Admin') { notice($dst, "@acl_admin"); }
