@@ -24,8 +24,8 @@ my $ht_owner = HelpTree::howner();
 my $YES;
 
 our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI');
-our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI');
+our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 # We will use a raw socket to connect to the IRC server.
@@ -643,7 +643,7 @@ sub envinfo {
 sub cmd_needmoreparams {
 	my ($dst, $cmd) = @_;
 	$cmd = uc($cmd);
-	notice($dst, "Not enough parameters for \002$cmd\002");
+	notice($dst, "Not enough parameters for \002$cmd\002.");
 }
 sub modinit {
 	my ($acl, $name, $desc) = @_;
