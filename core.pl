@@ -321,6 +321,9 @@ while (my $input = <$sock>) {
 						elsif ($args =~ m/cho(m)p(.+)?/i) {
 							privmsg($channel,"\002$nick\002: Invalid input.");
 						}
+						elsif ($args =~ m/\$config/i) {
+							privmsg($channel,"\002$nick\002: Invalid input.");
+						}
 						else {
 							my $result = eval($args);
 							privmsg($channel,"\002$nick\002: $args = $result") if defined $result;
