@@ -25,7 +25,7 @@ my $YES;
 
 our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
 our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 # We will use a raw socket to connect to the IRC server.
@@ -235,6 +235,11 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'die') {
 						if (isowner($from)) { signoff($nick, $args);
+						} else { cmd_failure($nick, $cmd); }
+					}
+					elsif ($cmd eq 'modload') {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isowner($from)) { modload($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'restart') {
@@ -554,6 +559,12 @@ sub help_cmd {
 sub nick {
 	my $newnick = shift;
 	senddata("NICK $newnick");
+}
+sub modload {
+	use Module::Load;
+	my ($dst, $mod) = @_;
+	load $mod;
+	notice ($dst, "Attempted to load \002$mod\002. Use the command to see if it was a success.");
 }
 sub get_timestamp {
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);

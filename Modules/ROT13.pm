@@ -15,7 +15,7 @@ my $ht_owner = HelpTree::howner();
 modinit('None',	'ROT13', 'Convert normal text to ROT13 and vice versa');
 
 # Add to modlist to make sure it gets added:
-pop(@modlist, "ROT13");
+push(@modlist, "ROT13");
 
 # Code for command:
  
