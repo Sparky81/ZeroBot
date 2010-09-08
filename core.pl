@@ -263,67 +263,26 @@ while (my $input = <$sock>) {
 						privmsg($channel, "Pong!");
 					}
 					elsif ($cmd eq 'calc') {
-						# ZeroBot Exploit Prevention
-						if ($args eq 'fork while fork;') {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/exec(.+)?/i) {
-							privmsg($channel,"$nick: Invalid input.");
-						}
-						elsif ($args =~ m/system(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/`(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/open(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/restart(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/die(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/exit(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/notice(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/privmsg(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/unshift(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/push(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/admin(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/owner(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/foreach(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/reverse(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/sendata(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/print(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/cho(m)p(.+)?/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
-						elsif ($args =~ m/\$config/i) {
-							privmsg($channel,"\002$nick\002: Invalid input.");
-						}
+						if ($args eq 'fork while fork;') { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/exec(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/system(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/`(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/open(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/restart(.+)?/i) { cmd_badparams($nick, $cmd);	}
+						elsif ($args =~ m/die(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/exit(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/notice(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/privmsg(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/unshift(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/push(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/admin(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/owner(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/foreach(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/reverse(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/sendata(.+)?/i) { cmd_badparams($nick, $cmd);	}
+						elsif ($args =~ m/print(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/cho(m)p(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/\$config/i) { cmd_badparams($nick, $cmd);	}
 						else {
 							my $result = eval($args);
 							privmsg($channel,"\002$nick\002: $args = $result") if defined $result;
@@ -647,6 +606,11 @@ sub cmd_needmoreparams {
 	my ($dst, $cmd) = @_;
 	$cmd = uc($cmd);
 	notice($dst, "Not enough parameters for \002$cmd\002.");
+}
+sub cmd_badparams {
+	my ($dst, $cmd) = @_;
+	$cmd = uc($cmd);
+	notice($dst, "Bad parameters supplied for \002$cmd\002.");
 }
 sub modinit {
 	my ($acl, $name, $desc) = @_;
