@@ -290,13 +290,9 @@ while (my $input = <$sock>) {
 						elsif ($args =~ m/cho(m)p(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/\$config/i) { cmd_badparams($nick, $cmd);	}
 						else {
-							privmsg($channel, "Could not fork. ($!)") unless (defined(my $pid = fork()));
-							if (defined($pid)) { 
 								my $result = eval($args); 
 								privmsg($channel,"\002$nick\002: $args = $result") if defined $result;
 								privmsg($channel,"\002$nick\002: Error.") unless defined $result;
-								kill("TERM" => $pid);
-							}
 						}
 					}
 				}
