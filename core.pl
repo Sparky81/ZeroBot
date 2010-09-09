@@ -18,6 +18,7 @@ require Class::Environment;
 my $env = Environment->new();
 my (@admin,@owner,@channels,$config);
 loadconfig();
+readchandb();
 my $me = $config->{IRCnick};
 my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
@@ -26,7 +27,7 @@ my $YES;
 
 our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
 our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 # We will use a raw socket to connect to the IRC server.
@@ -99,11 +100,6 @@ while (my $input = <$sock>) {
 			if ($target =~ m/^\#/) { # if this is a channel, otherwise it's a private message
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
-					our $cmd_export = $cmd;
-					our $args_export = $args;
-					our $nick_export = $nick;
-					our $from_export = $from;
-					our $channel_export = $channel;
 					if ($cmd =~ 'help') {
 					if (!defined $args) {
                             help($nick, $from);
@@ -154,7 +150,7 @@ while (my $input = <$sock>) {
 							slog($nick.":BAN:".$channel.":".$args);
 						}
 					}
-					elsif ($cmd eq 'join') {
+					elsif ($cmd =~ m/(j)oin/i) {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif ((isadmin($from)) or (isowner($from))) {
 							netjoin($args);
@@ -238,6 +234,11 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'last') {
 						lastcmd($channel);
+					}
+					elsif ($cmd eq 'addchan') {
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isowner($from)) { addchan($nick, $args); }
+						else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'die') {
 						if (isowner($from)) { signoff($nick, $args);
@@ -410,8 +411,8 @@ sub part {
 	senddata("PART $chan");
 }
 sub netjoin {
-	my $chan = shift; 
-	senddata("JOIN $chan");
+	my $channel = $_[0]; 
+	senddata("JOIN $channel");
 #	push(@channels, $chan);
 }
 sub signoff {
@@ -563,6 +564,25 @@ sub help_cmd {
 		}
 	}
 }
+sub addchan {
+	my ($dst, $newchan) = @_;
+	netjoin($newchan);
+	open(DB, ">>channels.db") or notice($dst, "Could not open channels.db. ($!)");
+	print DB "$newchan\n";
+	close(DB);
+	notice($dst, "Added \002$newchan\002 to database.");
+}
+sub readchandb {
+	if (-e 'channels.db') {
+		open(DB, 'channels.db');
+		my @lines = <DB>;
+		close(DB);
+	    foreach my $line (@lines) {
+	        chomp($line);
+			unshift(@channels, $line);
+		}
+	}
+}
 sub nick {
 	my $newnick = shift;
 	senddata("NICK $newnick");
@@ -625,8 +645,8 @@ sub cmd_badparams {
 	notice($dst, "Bad parameters supplied for \002$cmd\002.");
 }
 sub autojoin {
-	foreach (@channels) {
-		netjoin($_);
+	foreach my $join (@channels) {
+		netjoin($join);
 	}
 }
 sub wallchan {
