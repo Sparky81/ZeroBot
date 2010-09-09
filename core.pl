@@ -264,10 +264,8 @@ while (my $input = <$sock>) {
                         } else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'reload') {
-						if (isowner($from)) {
 							loadconfig();
 							privmsg($channel,'Configuration reloaded.');
-						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'cycle') {
 						if ((isadmin($from)) or (isowner($from))) {
