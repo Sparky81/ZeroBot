@@ -62,6 +62,7 @@ while (my $input = <$sock>) {
     $YES = 1;
     if ($input =~ /004/) {
 		autojoin();
+		netjoin($config->{homechan});
 	if ($config->{ns_pass}) { privmsg('NickServ','IDENTIFY '.$config->{ns_pass}); }
         last;
     }
@@ -411,11 +412,13 @@ sub ban {
 }
 sub part {
 	my ($dst, $chan, $reason) = @_;
-	if (!defined($reason))
-	{
-		senddata("PART $chan :\002PART\002 used by $dst.");
-	} else {
-		senddata("PART $chan :$reason");
+	if (defined($chan)) {
+		if (!defined($reason))
+		{
+			senddata("PART $chan :\002PART\002 used by $dst.");
+		} else {
+			senddata("PART $chan :$reason");
+		}
 	}
 }
 sub cycle {
@@ -593,7 +596,9 @@ sub addchan {
 sub delchan {
 	my ($dst, $delchan) = @_;
 	part($delchan);
-	if (-e 'channels.db') {
+	$config->{homechan} = lc($config->{homechan});
+	$delchan = lc($delchan);
+	if ((-e 'channels.db') and ($delchan ne $config->{homechan})) {
 		open(DB, 'channels.db');
 		my @chans = <DB>;
 		close(DB);
@@ -604,7 +609,8 @@ sub delchan {
 		print DB @chans;
 		close(DB);
 		notice($dst, "Removed \002$delchan\002.");
-	} else { notice($dst, "Could not locate \002channels.db\002."); }
+	} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
+	} else { notice($dst, "Cannot locate database file."); }
 }
 sub readchandb {
 	if (-e 'channels.db') {
@@ -729,7 +735,10 @@ sub loadconfig {
 			next CONFPARSE;
 		}
 		if ($line =~ m/^channel:(.+)$/) {
-		#	$config->{'homechan'} = $1;
+			$config->{'homechan'} = $1;
+			next CONFPARSE;
+		}
+		if ($line =~ m/^addchan:(.+)$/) {
 			push(@channels, $1);
 			next CONFPARSE;
 		}
