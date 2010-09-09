@@ -241,7 +241,7 @@ while (my $input = <$sock>) {
 						else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'delchan') {
-                        if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+                        if (!defined($args)) { delchan($nick, $channel);
                         } elsif (isowner($from)) { delchan($nick, $args); }
                         else { cmd_failure($nick, $cmd); }
 					}
