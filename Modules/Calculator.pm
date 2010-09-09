@@ -18,7 +18,8 @@ if ($cmd eq 'gcalc')
 
 sub gcalc {
 	my ($dst, $exp) = @_;
-	privmsg($dst, $calc->calc("$exp"));	
+	privmsg($dst, $calc->calc("$exp"));
+	return $calc->calc("$exp");	
 }
 glob *gcalc;
 1;
