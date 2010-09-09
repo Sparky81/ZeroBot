@@ -168,16 +168,14 @@ while (my $input = <$sock>) {
 						}
 					}
 					elsif ($cmd eq 'part') {
-					if (!defined($args))
-					{
-						part($channel);
-						slog($nick.":PART:<No reason given>");
-					
-					} elsif ((isadmin($from)) or (isowner($from))) {
-								part($args);
-								notice($nick,"I have parted: $args");
-								slog($nick.":PART:".$args);
-						}
+						if ((isadmin($from)) or (isowner($from))) {
+							if (!defined($args)) 
+							{
+								 part($nick, $channel);
+							} else { 
+								part($nick, $channel, $args);
+							}
+						} else { cmd_failure($nick,$cmd); }
 					}
 					elsif ($cmd eq 'unban') {
 					if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
@@ -272,8 +270,8 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'cycle') {
 						if ((isadmin($from)) or (isowner($from))) {
-							part($channel);
-							netjoin($channel);
+							if(!defined($args)) { cycle($nick, $channel);
+							} else { cycle($nick, $channel, $args); }
 						}
 					}
 					elsif ($cmd eq 'ping') {
@@ -412,8 +410,23 @@ sub ban {
 	}
 }
 sub part {
-	my $chan = shift;
-	senddata("PART $chan");
+	my ($dst, $chan, $reason) = @_;
+	if (!defined($reason))
+	{
+		senddata("PART $chan :\002PART\002 used by $dst.");
+	} else {
+		senddata("PART $chan :$reason");
+	}
+}
+sub cycle {
+	my ($dst, $chan, $reason) = @_;
+	if (!defined($reason)) {
+		senddata("PART $chan :\002CYCLE\002 used by $dst.");
+		senddata("JOIN $chan");
+	} else {
+		senddata("PART $chan :$reason");
+		senddata("JOIN $chan");
+	}
 }
 sub netjoin {
 	my $channel = $_[0]; 
