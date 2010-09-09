@@ -27,7 +27,7 @@ my $YES;
 
 our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
 our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 # We will use a raw socket to connect to the IRC server.
@@ -239,6 +239,11 @@ while (my $input = <$sock>) {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif (isowner($from)) { addchan($nick, $args); }
 						else { cmd_failure($nick, $cmd); }
+					}
+					elsif ($cmd eq 'delchan') {
+                        if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+                        } elsif (isowner($from)) { delchan($nick, $args); }
+                        else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'die') {
 						if (isowner($from)) { signoff($nick, $args);
@@ -571,6 +576,22 @@ sub addchan {
 	print DB "$newchan\n";
 	close(DB);
 	notice($dst, "Added \002$newchan\002 to database.");
+}
+sub delchan {
+	my ($dst, $delchan) = @_;
+	part($delchan);
+	if (-e 'channels.db') {
+		open(DB, 'channels.db');
+		my @chans = <DB>;
+		close(DB);
+		
+		@chans = grep !/^$delchan/, @chans;
+
+		open(DB, '>channels.db');
+		print DB @chans;
+		close(DB);
+		notice($dst, "Removed \002$delchan\002.");
+	} else { notice($dst, "Could not locate \002channels.db\002."); }
 }
 sub readchandb {
 	if (-e 'channels.db') {
