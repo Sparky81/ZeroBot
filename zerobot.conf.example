@@ -14,7 +14,7 @@ port:6697
 ssl:true
 nick:ZeroBot
 ident:ZeroBot
-
+gecos:My Realname Goes Here
 # define the channels you wish the bot to join on connect
 channel:#ZeroBot
 channel:#MyDen

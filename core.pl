@@ -55,7 +55,7 @@ if ($config->{SSL})
 
 # Log on to the server.
 senddata('NICK '.$config->{IRCnick});
-senddata('USER '.$config->{IRCname}.' 8 * :Sparky\'s Perl IRC Bot');
+senddata('USER '.$config->{IRCident}.' 8 * :'.$config->{IRCgecos});
 my (%user,%channel,%cmd_);
 # Read lines from the server until it tells us we have connected.
 while (my $input = <$sock>) {
@@ -721,7 +721,11 @@ sub loadconfig {
 			next CONFPARSE;
 		}
 		if ($line =~ m/^ident:(.+)$/) {
-			$config->{'IRCname'} = $1;
+			$config->{'IRCident'} = $1;
+			next CONFPARSE;
+		}
+		if ($line =~ m/^gecos:(.+)$/i) {
+			$config->{'IRCgecos'} = $1;
 			next CONFPARSE;
 		}
 		if ($line =~ m/^channel:(.+)$/) {
