@@ -13,6 +13,7 @@
 use strict;
 use warnings;
 require HelpTree;
+require Persist;
 require Class::Environment;
 my $env = Environment->new();
 my (@admin,@owner,@channels,$config);
@@ -560,12 +561,6 @@ sub nick {
 	my $newnick = shift;
 	senddata("NICK $newnick");
 }
-sub modload {
-	use Module::Load;
-	my ($dst, $mod) = @_;
-	load $mod;
-	notice ($dst, "Attempted to load \002$mod\002. Use the command to see if it was a success.");
-}
 sub get_timestamp {
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
    if ($mon < 10) { $mon = "0$mon"; }
@@ -622,37 +617,6 @@ sub cmd_badparams {
 	my ($dst, $cmd) = @_;
 	$cmd = uc($cmd);
 	notice($dst, "Bad parameters supplied for \002$cmd\002.");
-}
-sub modinit {
-	my ($acl, $name, $desc) = @_;
-	if ($acl eq 'None')
-	{
-		$ht_none->{"$name"} = "$desc";
-		$ht_admin->{"$name"} = "$desc";
-		$ht_owner->{"$name"} = "$desc";
-
-		unshift(@acl_none, "$name");
-		unshift(@acl_admin, "$name");
-		unshift(@acl_owner, "$name");
-	}
-
-	if ($acl eq 'Admin')
-	{
-        $ht_admin->{"$name"} = "$desc";
-        $ht_owner->{"$name"} = "$desc";
-		
-		unshift(@acl_admin, "$name");
-        unshift(@acl_owner, "$name");
-
-	}
-
-	if ($acl eq 'Owner')
-	{
-        $ht_owner->{"$name"} = "$desc";
-        unshift(@acl_owner, "$name");
-
-	}
-		
 }
 sub autojoin {
 	foreach (@channels) {
