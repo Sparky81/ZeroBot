@@ -99,6 +99,11 @@ while (my $input = <$sock>) {
 			if ($target =~ m/^\#/) { # if this is a channel, otherwise it's a private message
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
+					our $cmd_export = $cmd;
+					our $args_export = $args;
+					our $nick_export = $nick;
+					our $from_export = $from;
+					our $channel_export = $channel;
 					if ($cmd =~ 'help') {
 					if (!defined $args) {
                             help($nick, $from);
