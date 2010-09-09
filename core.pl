@@ -278,6 +278,7 @@ while (my $input = <$sock>) {
 						elsif ($args =~ m/die(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/exit(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/notice(.+)?/i) { cmd_badparams($nick, $cmd); }
+						elsif ($args =~ m/kill(.*?)/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/privmsg(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/unshift(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/push(.+)?/i) { cmd_badparams($nick, $cmd); }
