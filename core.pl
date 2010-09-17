@@ -59,7 +59,7 @@ senddata('USER '.$config->{IRCident}.' 8 * :'.$config->{IRCgecos});
 my (%user,%channel,%cmd_);
 # Read lines from the server until it tells us we have connected.
 while (my $input = <$sock>) {
-    $YES = 1;
+	$YES = 1;
     if ($input =~ /004/) {
 		autojoin();
 		netjoin($config->{homechan});
@@ -70,11 +70,17 @@ while (my $input = <$sock>) {
         $me = $me.'-';
 		nick($me);
     }
+	elsif ($input =~ m/(.*) 474 \$me \#(.*) :Cannot join channel/i) {
+		privmsg("#ZeroBot", "I am banned from a channel.");
+	}
 }
 
 # Keep reading lines from the server.
 while (my $input = <$sock>) {
 	chop $input;
+    if ($input =~ m/:(.*) 474 \$me \#(.*) :Cannot join channel/i) {
+        privmsg("#ZeroBot", "I am banned from a channel.");
+    }
 	$input =~ s/^\s+//g;
 	$input =~ s/\s+$//g;
 	my @s = split(' ',$input);
@@ -98,7 +104,7 @@ while (my $input = <$sock>) {
 			my @a = split(' ',$input,5);
 			my $args = $a[4];
 			$args =~ s/\s+$// if $args;
-			if ($target =~ m/^\#/) { # if this is a channel, otherwise it's a private message
+			if ($target =~ m/^\#/) { 
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
 					if ($cmd =~ 'help') {
@@ -151,7 +157,7 @@ while (my $input = <$sock>) {
 							slog($nick.":BAN:".$channel.":".$args);
 						}
 					}
-					elsif ($cmd =~ m/(j)oin/i) {
+					elsif ($cmd =~ m/j(oin)?/i) {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif ((isadmin($from)) or (isowner($from))) {
 							netjoin($args);
@@ -588,8 +594,8 @@ sub addchan {
 	netjoin($newchan);
 	open(DB, ">>channels.db") or notice($dst, "Could not open channels.db. ($!)");
 	print DB "$newchan\n";
+	notice($dst, "\002$newchan\002 succesfully added to channels.db.");
 	close(DB);
-	notice($dst, "Added \002$newchan\002 to database.");
 }
 sub delchan {
 	my ($dst, $delchan) = @_;
