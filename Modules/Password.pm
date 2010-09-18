@@ -1,6 +1,7 @@
+#!/usr/bin/perl -w
 # Copyright (c) 2010 Samuel Hoffman
 require Persist;
-use Persist;
+use strict;
 modinit('None',	'PASSWD', 'Generate a random password.');
 
 sub randomPassword {
