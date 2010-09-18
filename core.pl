@@ -79,9 +79,6 @@ while (my $input = <$sock>) {
 # Keep reading lines from the server.
 while (my $input = <$sock>) {
 	chop $input;
-    if ($input =~ m/:(.*) 474 \$me \#(.*) :Cannot join channel/i) {
-        privmsg("#ZeroBot", "I am banned from a channel.");
-    }
 	$input =~ s/^\s+//g;
 	$input =~ s/\s+$//g;
 	my @s = split(' ',$input);
@@ -443,7 +440,8 @@ sub netjoin {
 }
 sub signoff {
 	my ($dst, $why) = @_;
-	if (!defined($why)) { senddata("QUIT :\002CROAK\002 used by \002$dst\002 (No reason given.)"); 
+	if (!defined($why)) { senddata("QUIT :\002CROAK\002 used by \002$dst\002 (No reason given.)");
+							croak "DIE used by $dst\n"; 
 	} else { senddata("QUIT :\002CROAK\002 used by \002$dst\002 ($why)"); }
 }
 sub restart {
