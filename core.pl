@@ -71,9 +71,6 @@ while (my $input = <$sock>) {
         $me = $me.'-';
 		nick($me);
     }
-	elsif ($input =~ m/(.*) 474 \$me \#(.*) :Cannot join channel/i) {
-		privmsg("#ZeroBot", "I am banned from a channel.");
-	}
 }
 
 # Keep reading lines from the server.
