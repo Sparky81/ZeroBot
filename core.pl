@@ -12,6 +12,7 @@
 
 use strict;
 use warnings;
+use Carp;
 require HelpTree;
 require Persist;
 require Class::Environment;
@@ -27,7 +28,7 @@ my $YES;
 
 our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
 our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'DIE', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 # We will use a raw socket to connect to the IRC server.
@@ -43,14 +44,14 @@ if ($config->{SSL})
 		PeerPort	=>	$config->{IRCport},
 		Proto		=> 'tcp',
 		Timeout		=> '30'
-	) or die "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
+	) or croak "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
 } else {
 	$sock = IO::Socket::INET->new(
 		PeerAddr	=>	$config->{IRCserver},
 		PeerPort	=>	$config->{IRCport},
 		Proto		=>	'tcp',
 		Timeout		=> '30'
-	) or die "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
+	) or croak "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
 }
 
 # Log on to the server.
@@ -250,7 +251,7 @@ while (my $input = <$sock>) {
                         } elsif (isowner($from)) { delchan($nick, $args); }
                         else { cmd_failure($nick, $cmd); }
 					}
-					elsif ($cmd eq 'die') {
+					elsif ($cmd eq 'croak') {
 						if (isowner($from)) { signoff($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
 					}
@@ -442,8 +443,8 @@ sub netjoin {
 }
 sub signoff {
 	my ($dst, $why) = @_;
-	if (!defined($why)) { senddata("QUIT :\002DIE\002 used by \002$dst\002 (No reason given.)"); 
-	} else { senddata("QUIT :\002DIE\002 used by \002$dst\002 ($why)"); }
+	if (!defined($why)) { senddata("QUIT :\002CROAK\002 used by \002$dst\002 (No reason given.)"); 
+	} else { senddata("QUIT :\002CROAK\002 used by \002$dst\002 ($why)"); }
 }
 sub restart {
 	my ($dst, $why) = @_;
@@ -700,7 +701,7 @@ sub wallchan {
 	}
 }
 sub loadconfig {
-	open(CONFIG,'zerobot.conf') or die "Configuration could not be read\n";
+	open(CONFIG,'zerobot.conf') or croak "Configuration could not be read\n";
 	my @lines = <CONFIG>;
 	@admin = ();
 	@owner = ();
@@ -765,6 +766,6 @@ sub loadconfig {
 		if ($line =~ m/^\s/) {
 			next CONFPARSE;
 		}
-		die "Line $i of the configuration is invalid.\n";
+		croak "Line $i of the configuration is invalid.\n";
 	}
 }
