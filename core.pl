@@ -16,7 +16,6 @@ use Carp;
 require HelpTree;
 require Persist;
 require Class::Environment;
-my $env = Environment->new();
 my (@admin,@owner,@channels,$config);
 loadconfig();
 readchandb();
@@ -26,15 +25,13 @@ my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
 my $YES;
 
-our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'ENVINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'ENVINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'ENVINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
-# We will use a raw socket to connect to the IRC server.
 use IO::Socket;
 
-# Connect to the IRC server.
 my $sock;
 if ($config->{SSL})
 {
@@ -54,11 +51,9 @@ if ($config->{SSL})
 	) or croak "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
 }
 
-# Log on to the server.
 senddata('NICK '.$config->{IRCnick});
 senddata('USER '.$config->{IRCident}.' 8 * :'.$config->{IRCgecos});
 my (%user,%channel,%cmd_);
-# Read lines from the server until it tells us we have connected.
 while (my $input = <$sock>) {
 	$YES = 1;
     if ($input =~ /004/) {
@@ -128,8 +123,8 @@ while (my $input = <$sock>) {
 							slog($nick.":RAW:".$args);
 						}
 					}
-					elsif ($cmd eq 'envinfo') {
-						envinfo($channel);
+					elsif ($cmd eq 'sysinfo') {
+						sysinfo($channel);
 					}
 					elsif ($cmd eq 'kick') {
 						if (!defined($args)) { kick($channel,$nick);
@@ -433,7 +428,6 @@ sub cycle {
 sub netjoin {
 	my $channel = $_[0]; 
 	senddata("JOIN $channel");
-#	push(@channels, $chan);
 }
 sub signoff {
 	my ($dst, $why) = @_;
@@ -666,13 +660,16 @@ sub cmd_notfound {
 	my ($dst, $cmd) = @_;
 	notice($dst, "Command \002$cmd\002 is not found. Please check your spelling and try again.");
 }
-sub envinfo {
+sub sysinfo {
 	my $dst = shift;
-	privmsg($dst, "Operating System: ".$env->os);
-	privmsg($dst, "UID: ".$env->uid);
-	privmsg($dst, "Uptime: ".$env->uptime);
-	privmsg($dst, "PID: ".$env->pid);
-	privmsg($dst, "Working Path: ".$env->path);
+	my $uptime = `uptime`;
+	my $uname = `uname -a`;
+	my $issue = `cat /etc/issue`;
+	my $version = `cat /proc/version`;
+	privmsg($dst, "\2Kernel\2: $^O :: \2Uptime\2: $uptime");
+	privmsg($dst, "\2PID\2: $$ :: \2Issue\2: $issue");
+	privmsg($dst, "\2Version\2: $version");
+	privmsg($dst, "\2Uname\2: $uname");
 }
 sub cmd_needmoreparams {
 	my ($dst, $cmd) = @_;
