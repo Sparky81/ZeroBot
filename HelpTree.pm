@@ -26,7 +26,7 @@ our %helptree_o = (
     PING => 'For users to check if they\'re still alive',
     ACT => 'Equivalent to /me sending to a channel.',
     SYSINFO => 'View working environment information',
-    TRIGGER => 'Change command trigger. (Current Trigger: .'.$config->{trigger}.')',
+    TRIGGER => 'Change command trigger. (Current Trigger: .'.&gettrigger.')',
     UNBAN => 'Unban an address from the channel ban list.'
 );
 our %helptree_a = (
@@ -49,7 +49,7 @@ our %helptree_a = (
     ACT => 'Equivalent to /me sending to a channel.',
 	ADMIN => 'Checks to see if user is an admin (you are if you\'re seeing this)',
 	JOIN => 'NETJOIN the bot to a channel',
-    TRIGGER => 'Change command trigger. (Current Trigger: .'.$config->{trigger}.')',
+    TRIGGER => 'Change command trigger. (Current Trigger: .'.&gettrigger.')',
 	PART => 'NETPART the bot from a channel',
     UNBAN => 'Unban an address from the channel ban list.'
 );
@@ -78,7 +78,7 @@ our %helptree_q = (
 	MODLOAD => 'Load a custom module (Example: MODLOAD Modules/Password.pm)',    	
 	PART => 'NETPART the bot from a channel',
     UNBAN => 'Unban an address from the channel ban list.',
-    TRIGGER => 'Change command trigger. (Current Trigger: '.$config->{trigger}.')',
+    TRIGGER => 'Change command trigger. (Current Trigger: '.&gettrigger.')',
 	CROAK => 'Force the bot to quit from the server and end its PID ('.$$.')',
 	RESTART => 'Force the bot to disconnect from the server, and restart itself',
 	WHOAMI => 'View your access level in the channel and/or bot.',

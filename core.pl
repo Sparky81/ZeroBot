@@ -15,7 +15,6 @@ use warnings;
 use Carp;
 require HelpTree;
 require Persist;
-require Class::Environment;
 my (@admin,@owner,@channels,$config);
 loadconfig();
 readchandb();
