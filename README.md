@@ -9,9 +9,5 @@ ZeroBot
  	- Port: 6667
  	- SSL:  6697
 
-
-*	ZeroBot has 1 dependency: Moose. The following line should install Moose (you may need to su as root):
- 	- $ cpan -i Moose
-
 *	Once installed use this to start the bot:
 	- $ ./core.pl &
