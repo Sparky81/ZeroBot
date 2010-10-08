@@ -1,0 +1,25 @@
+# IRC Server to connect to
+server:irc.zeronet.us
+# port to connect on 
+port:6667
+# is the above port ssl or not?
+ssl:false
+# nick to connect with
+nick:Deltron_Zero
+# ident/username to connect with
+ident:Deltron_Zero
+# realname to connect with
+gecos:DemonDays
+# home channel to join
+channel:#ZeroBot
+# identifying to nickserv
+nickserv:NickServPass
+# command trigger (may only be 1 character in length)
+trigger:*
+# bot owner (add as many hosts as you want on separate lines)
+owner:miniCruzer!eyeless@*
+# bot admin (add as many hosts as you want on separate lines)
+admin:*!*@cooper.Staff.AlphaChat.net
+# other channels to join (not home channels)
+addchan:#niggaplz
+addchan:#myden
