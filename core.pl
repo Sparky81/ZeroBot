@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 ####################################
 #      ZeroNET's Perl IRC Bot      #
@@ -17,7 +17,7 @@ require HelpTree;
 require Persist;
 my (@admin,@owner,@channels,$config);
 loadconfig();
-readchandb();
+zerodb();
 my $me = $config->{IRCnick};
 my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
@@ -124,6 +124,9 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'sysinfo') {
 						sysinfo($channel);
+					}
+					elsif ($cmd eq 'list') {
+						list($nick, $args);
 					}
 					elsif ($cmd eq 'kick') {
 						if (!defined($args)) { kick($channel,$nick);
@@ -235,9 +238,9 @@ while (my $input = <$sock>) {
 						else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'delchan') {
-                        if (!defined($args)) { delchan($nick, $channel);
-                        } elsif (isowner($from)) { delchan($nick, $args); }
-                        else { cmd_failure($nick, $cmd); }
+                        			if (!defined($args)) { delchan($nick, $channel);
+                        			} elsif (isowner($from)) { delchan($nick, $args); }
+                        			else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'croak') {
 						if (isowner($from)) { signoff($nick, $args);
@@ -253,10 +256,10 @@ while (my $input = <$sock>) {
 						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'nick') {
-					if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
-					} elsif (isowner($from)) { 
+						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
+						} elsif (isowner($from)) { 
 						nick($args);
-                        } else { cmd_failure($nick, $cmd); }
+                			        } else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'reload') {
 							loadconfig();
@@ -581,38 +584,78 @@ sub help_cmd {
 sub addchan {
 	my ($dst, $newchan) = @_;
 	netjoin($newchan);
-	open(DB, ">>channels.db") or notice($dst, "Could not open channels.db. ($!)");
+	open(DB, ">>zero.db") or notice($dst, "Could not open zero.db. ($!)");
 	print DB "$newchan\n";
-	notice($dst, "\002$newchan\002 succesfully added to channels.db.");
+	push(@channels, $newchan);
+	notice($dst, "\002$newchan\002 succesfully added to database.");
 	close(DB);
 }
 sub delchan {
 	my ($dst, $delchan) = @_;
-	part($delchan);
 	$config->{homechan} = lc($config->{homechan});
 	$delchan = lc($delchan);
-	if ((-e 'channels.db') and ($delchan ne $config->{homechan})) {
-		open(DB, 'channels.db');
+	if ((-e 'zero.db') and ($delchan ne $config->{homechan})) {
+		open(DB, 'zero.db') or notice($dst, "Database exists, but it could not be opened. ($!)");
 		my @chans = <DB>;
-		close(DB);
-		
-		@chans = grep !/^$delchan/, @chans;
-
-		open(DB, '>channels.db');
+		close(DB);	
+		@chans = grep !/$delchan/, @chans;
+		open(DB, '>>zero.db') or notice($dst, "Could not open database. ($!)");
 		print DB @chans;
 		close(DB);
+	        part($dst, $delchan, "Channel ($delchan) being removed by \002$dst\002.");
 		notice($dst, "Removed \002$delchan\002.");
 	} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
 	} else { notice($dst, "Cannot locate database file."); }
 }
-sub readchandb {
-	if (-e 'channels.db') {
-		open(DB, 'channels.db');
+sub list {
+	my ($dst, $option) = @_;
+	$option = lc($option);
+	if ($option eq 'channels')
+	{
+		notice($dst, "\002CHANNEL LIST\002:");
+                notice($dst, "\002Home Channel\002: $config->{homechan}");
+		foreach (@channels) 
+		{ 
+			notice($dst, "$_"); 
+		}
+	}
+
+	if ($option eq 'owners')
+	{
+		notice($dst, "\002BOT OWNER LIST\002:");
+		foreach (@owner) { notice($dst, "$_"); }
+	}
+
+	if ($option eq 'admins')
+	{
+		notice($dst, "\002BOT ADMIN LIST\002:");
+		foreach (@admin) { notice($dst, "$_"); }
+	}	
+}
+sub zerodb {
+	if (-e 'zero.db') {
+		open(DB, 'zero.db') or die "zero.db exists, but it could not be read. ($!)\n";
 		my @lines = <DB>;
 		close(DB);
-	    foreach my $line (@lines) {
-	        chomp($line);
-			unshift(@channels, $line);
+		my $i = 0;
+	    	ZERODB: foreach my $line (@lines) {
+	        $i++;
+		chomp($line);
+			if ($line =~ /^#(.*)/) 
+			{
+				unshift (@channels, "#".$1);
+				next ZERODB;
+			}
+			if ($line =~ /^A:(.+)/)
+			{
+				unshift(@admin, $1);
+				next ZERODB;
+			}
+			if ($line =~ /^O:(.+)/)
+			{
+				unshift(@owner, $1);
+				next ZERODB;
+			}
 		}
 	}
 }
