@@ -34,7 +34,7 @@ use IO::Socket;
 my $sock;
 if ($config->{SSL})
 {
-	use IO::Socket::SSL;
+#	use IO::Socket::SSL;
 	$sock = IO::Socket::SSL->new(
 		PeerAddr	=>	$config->{IRCserver},
 		PeerPort	=>	$config->{IRCport},
@@ -596,12 +596,17 @@ sub delchan {
 	$delchan = lc($delchan);
 	if ((-e 'zero.db') and ($delchan ne $config->{homechan})) {
 		open(DB, 'zero.db') or notice($dst, "Database exists, but it could not be opened. ($!)");
-		my @chans = <DB>;
+		my $current = '';
+		while(my $line = <DB>) {
+			$line =~ s/\s+$//;
+			unless (lc($line) eq lc($delchan)) {
+				$current .= $line."\n";
+			}
+		}
 		close(DB);	
-		@chans = grep !/$delchan/, @chans;
-		open(DB, '>>zero.db') or notice($dst, "Could not open database. ($!)");
-		print DB @chans;
-		close(DB);
+		open WRITE, '>zero.db' or notice($dst,'Could not write database: '.$!);
+		print WRITE $current;
+		close WRITE;
 	        part($dst, $delchan, "Channel ($delchan) being removed by \002$dst\002.");
 		notice($dst, "Removed \002$delchan\002.");
 	} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
