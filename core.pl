@@ -34,7 +34,7 @@ use IO::Socket;
 my $sock;
 if ($config->{SSL})
 {
-#	use IO::Socket::SSL;
+	require IO::Socket::SSL;
 	$sock = IO::Socket::SSL->new(
 		PeerAddr	=>	$config->{IRCserver},
 		PeerPort	=>	$config->{IRCport},
