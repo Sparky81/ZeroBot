@@ -30,9 +30,9 @@ my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
 my $YES;
 
-our @acl_none = ('ATS', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_none = ('ATS', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+our @acl_admin = ('ATS', 'BAN', 'LIST', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 use IO::Socket;
@@ -608,7 +608,7 @@ sub delchan {
 	$config->{homechan} = lc($config->{homechan});
 	$delchan = lc($delchan);
 	if ($delchan =~ m/^#/) {
-		if ((-e 'zero.db') and ($delchan ne $config->{homechan})) {
+		if ((-e 'zero.db') and ($delchan ne $config->{homechan}) and (defined($channels->{$delchan}))) {
 	        	my $row = $db->do("DELETE FROM CHANNELS WHERE CHANNEL=\"$delchan\";");
 			$db->commit();
 			if (defined($row))
@@ -618,7 +618,7 @@ sub delchan {
 				notice($dst, "Removed \002$delchan\002.");
 			} else { notice($dst, "Could not remove \002$delchan\002 from the database."); }
 		} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
-		} else { notice($dst, "Cannot locate database file."); }
+		} elsif (!$channels->{$delchan}) { notice($dst, "\002$delchan\002 is non-existant."); } else { notice ($dst, "Cannot locate database file."); }
 	} else { notice($dst, "Cannot delete \002$delchan\002 from database: it is not a valid channel, so it won't exist!"); }
 }
 sub list {
@@ -628,8 +628,8 @@ sub list {
 	{
 		notice($dst, "\002CHANNEL LIST\002:");
                 notice($dst, "\002Home Channel\002: $config->{homechan}");
-    		while (my($key, $value) = each(%$channels)) {
-			notice ($dst, "$key [$value]");
+		while (my($key, $value) = each(%$channels)) {
+			notice($dst, "$key [$value]");
     		}
 
 	}
@@ -735,6 +735,7 @@ sub loadconfig {
 	my @lines = <CONFIG>;
 	@admin = ();
 	@owner = ();
+	$config = {};
 	close(CONFIG);
 	my $i = 0;
         while (my($key, $value) = each(%$channels)) {
@@ -806,5 +807,16 @@ sub loadconfig {
 		} else {
 			croak "Line $i of the configuration is invalid. (\"$line\")\n";
 		}
+	}
+
+	if ($dst)
+	{
+		if(!$config->{IRCnick}) { notice($dst, "You have not defined a nickname for the bot. This is required."); }
+		if(!$config->{IRCident}) { notice($dst, "You have not defined an ident for the bot. This is required."); }
+		if(!$config->{IRCport}) { notice($dst, "You have not defined a port for the bot to connect to. This is required."); }
+		if(!$config->{IRCserver}) { notice($dst, "You have not defined an IRC Server for the bot to connect to. This is required."); }
+		if(!$config->{IRCgecos}) { notice($dst, "You have not defined a GECOS (realname) for the bot. This is required."); }
+		if(!$config->{trigger}) { notice($dst, "You have not defined a valid command trigger for the bot. This is required."); }
+		if(!$config->{homechan}) { notice($dst, "You ahve not defined a home channel. This is required."); }
 	}
 }
