@@ -12,7 +12,7 @@ ZeroBot
 *	Before you can start the bot, you need to generate a database with SQLite3. SQLite
 	is available in most repositories. ZeroBot also requires the DBI module to communicate
 	with the SQLite Database. You can install that with:
-	- $ sudo cpan -i DBI::SQLite;
+	- $ sudo cpan -i DBI::SQLite
 	
 *	After installing SQLite, use the following command to generate a database:
 	- $ ./mydbgen
