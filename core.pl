@@ -46,7 +46,7 @@ if ($config->{SSL})
 		PeerPort	=>	$config->{IRCport},
 		Proto		=> 'tcp',
 		Timeout		=> '30'
-	) or croak "Could not connect to ".$config->{IRCserver}.":".$config->{IRCport}." - $!\n";
+	) or croak "Could not connect to ".$config->{IRCserver}.":+".$config->{IRCport}." - $!\n";
 } else {
 	$sock = IO::Socket::INET->new(
 		PeerAddr	=>	$config->{IRCserver},
@@ -737,6 +737,9 @@ sub loadconfig {
 	@owner = ();
 	close(CONFIG);
 	my $i = 0;
+        while (my($key, $value) = each(%$channels)) {
+		if ($value eq 'config') { delete($channels->{$key}) }
+        }
 	CONFPARSE: foreach my $line (@lines) {
 		$i++;
 		chomp($line);
