@@ -13,11 +13,17 @@
 use strict;
 use warnings;
 use Carp;
+use DBI;
 require HelpTree;
 require Persist;
-my (@admin,@owner,@channels,$config);
-loadconfig();
-zerodb();
+my $channels = {};
+my (@admin,@owner,$config);
+&loadconfig;
+my $dbargs = {
+	AutoCommit => 1,
+	RaiseError => 1 };
+my $db = DBI->connect("dbi:SQLite:dbname=zero.db","","",$dbargs);
+&dbread;
 my $me = $config->{IRCnick};
 my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
@@ -190,7 +196,7 @@ while (my $input = <$sock>) {
 							my $t = $tt[0];
 							my $ttt = $tt[1];
 							$cmd_{lc($t)} = $ttt;
-							notice($nick,"I have added the response that you requested");
+							notice($nick,"I have added the response that you requested.");
 							slog($nick.":ATS:".$args);
 						}
 					}
@@ -262,7 +268,7 @@ while (my $input = <$sock>) {
                 			        } else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'reload') {
-							loadconfig();
+							loadconfig($nick);
 							privmsg($channel,'Configuration reloaded.');
 					}
 					elsif ($cmd eq 'cycle') {
@@ -583,34 +589,37 @@ sub help_cmd {
 }
 sub addchan {
 	my ($dst, $newchan) = @_;
-	netjoin($newchan);
-	open(DB, ">>zero.db") or notice($dst, "Could not open zero.db. ($!)");
-	print DB "$newchan\n";
-	push(@channels, $newchan);
-	notice($dst, "\002$newchan\002 succesfully added to database.");
-	close(DB);
+	$newchan = lc($newchan);
+	if ($newchan =~ m/^#/) {
+		if (-e 'zero.db') {
+			netjoin($newchan);
+			my $row = $db->do("INSERT INTO CHANNELS (CHANNEL) VALUES (\"$newchan\");");
+			$db->commit();
+			if (defined($row))
+			{
+				$channels->{$newchan} = 'db';
+				notice($dst, "\002$newchan\002 succesfully added to database.");
+			} else { notice($dst, "Could not add \002$newchan\002 to the database."); }
+		} else { notice($dst, "Could not add $newchan because \002zero.db\002 does not exist."); }
+	} else { notice($dst, "\002$newchan\002 is not a valid channel name! Prefix it with '#', and try again."); }
 }
 sub delchan {
 	my ($dst, $delchan) = @_;
 	$config->{homechan} = lc($config->{homechan});
 	$delchan = lc($delchan);
-	if ((-e 'zero.db') and ($delchan ne $config->{homechan})) {
-		open(DB, 'zero.db') or notice($dst, "Database exists, but it could not be opened. ($!)");
-		my $current = '';
-		while(my $line = <DB>) {
-			$line =~ s/\s+$//;
-			unless (lc($line) eq lc($delchan)) {
-				$current .= $line."\n";
-			}
-		}
-		close(DB);	
-		open WRITE, '>zero.db' or notice($dst,'Could not write database: '.$!);
-		print WRITE $current;
-		close WRITE;
-	        part($dst, $delchan, "Channel ($delchan) being removed by \002$dst\002.");
-		notice($dst, "Removed \002$delchan\002.");
-	} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
-	} else { notice($dst, "Cannot locate database file."); }
+	if ($delchan =~ m/^#/) {
+		if ((-e 'zero.db') and ($delchan ne $config->{homechan})) {
+	        	my $row = $db->do("DELETE FROM CHANNELS WHERE CHANNEL=\"$delchan\";");
+			$db->commit();
+			if (defined($row))
+			{
+				delete($channels->{"$delchan"});
+				part($dst, $delchan, "Channel ($delchan) being removed by \002$dst\002.");
+				notice($dst, "Removed \002$delchan\002.");
+			} else { notice($dst, "Could not remove \002$delchan\002 from the database."); }
+		} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
+		} else { notice($dst, "Cannot locate database file."); }
+	} else { notice($dst, "Cannot delete \002$delchan\002 from database: it is not a valid channel, so it won't exist!"); }
 }
 sub list {
 	my ($dst, $option) = @_;
@@ -619,10 +628,10 @@ sub list {
 	{
 		notice($dst, "\002CHANNEL LIST\002:");
                 notice($dst, "\002Home Channel\002: $config->{homechan}");
-		foreach (@channels) 
-		{ 
-			notice($dst, "$_"); 
-		}
+    		while (my($key, $value) = each(%$channels)) {
+			notice ($dst, "$key [$value]");
+    		}
+
 	}
 
 	if ($option eq 'owners')
@@ -636,33 +645,6 @@ sub list {
 		notice($dst, "\002BOT ADMIN LIST\002:");
 		foreach (@admin) { notice($dst, "$_"); }
 	}	
-}
-sub zerodb {
-	if (-e 'zero.db') {
-		open(DB, 'zero.db') or die "zero.db exists, but it could not be read. ($!)\n";
-		my @lines = <DB>;
-		close(DB);
-		my $i = 0;
-	    	ZERODB: foreach my $line (@lines) {
-	        $i++;
-		chomp($line);
-			if ($line =~ /^#(.*)/) 
-			{
-				unshift (@channels, "#".$1);
-				next ZERODB;
-			}
-			if ($line =~ /^A:(.+)/)
-			{
-				unshift(@admin, $1);
-				next ZERODB;
-			}
-			if ($line =~ /^O:(.+)/)
-			{
-				unshift(@owner, $1);
-				next ZERODB;
-			}
-		}
-	}
 }
 sub nick {
 	my $newnick = shift;
@@ -729,18 +711,27 @@ sub cmd_badparams {
 	notice($dst, "Bad parameters supplied for \002$cmd\002.");
 }
 sub autojoin {
-	foreach my $join (@channels) {
-		netjoin($join);
-	}
+    while (my($key, $value) = each(%$channels)) {
+        netjoin($key);
+    }
 }
 sub wallchan {
 	my $wall = shift;
-	foreach (@channels) {
-		privmsg($_, $wall);
+    	while (my($key, $value) = each(%$channels) ) {
+        	privmsg($key, "$wall");
+    	}
+
+}
+sub dbread {
+	my $all = $db->selectall_arrayref("SELECT * FROM CHANNELS;");
+	foreach my $row (@$all) {
+		my ($cname) = @$row;
+		$channels->{ $cname } = 'db'; 
 	}
 }
 sub loadconfig {
-	open(CONFIG,'zerobot.conf') or croak "Configuration could not be read\n";
+	my $dst = shift;
+	open(CONFIG,'zerobot.conf') or croak "Configuration could not be read.\n";
 	my @lines = <CONFIG>;
 	@admin = ();
 	@owner = ();
@@ -783,7 +774,7 @@ sub loadconfig {
 			next CONFPARSE;
 		}
 		if ($line =~ m/^addchan:(.+)$/) {
-			push(@channels, $1);
+			$channels->{"$1"} = 'config';
 			next CONFPARSE;
 		}
 		if ($line =~ m/^nickserv:(.+)$/) {
@@ -805,6 +796,12 @@ sub loadconfig {
 		if ($line =~ m/^\s/) {
 			next CONFPARSE;
 		}
-		croak "Line $i of the configuration is invalid.\n";
+		if (defined($dst)) 
+		{ 
+			notice($dst, "Line \002$i\002 of your \002zerobot.conf\002 is invalid!");
+			notice($dst, $line);
+		} else {
+			croak "Line $i of the configuration is invalid. (\"$line\")\n";
+		}
 	}
 }
