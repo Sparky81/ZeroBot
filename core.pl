@@ -59,6 +59,7 @@ if ($config->{SSL})
 senddata('NICK '.$config->{IRCnick});
 senddata('USER '.$config->{IRCident}.' 8 * :'.$config->{IRCgecos});
 my (%user,%channel,%cmd_);
+&dbread;
 while (my $input = <$sock>) {
 	$YES = 1;
     if ($input =~ /004/) {
@@ -73,7 +74,6 @@ while (my $input = <$sock>) {
     }
 }
 
-# Keep reading lines from the server.
 while (my $input = <$sock>) {
 	chop $input;
 	$input =~ s/^\s+//g;
@@ -196,7 +196,9 @@ while (my $input = <$sock>) {
 							my $t = $tt[0];
 							my $ttt = $tt[1];
 							$cmd_{lc($t)} = $ttt;
-							notice($nick,"I have added the response that you requested.");
+							my $row_ats = $db->do("INSERT INTO ATS (CALL, RESPONSE) VALUES (\"".lc($tt[0])."\", \"".lc($tt[1])."\");");
+							if ($row_ats) { notice($nick,"Every time I see '\002$tt[0]\002', I will respond with, '\002$tt[1]\002'.");
+							} else { notice($nick,"Could not add '$tt[0]' into the database. ($DBI::errstr)"); }
 							slog($nick.":ATS:".$args);
 						}
 					}
@@ -214,7 +216,10 @@ while (my $input = <$sock>) {
 							cmd_needmoreparams($nick, $cmd);
 						} else {
 							delete $cmd_{lc($args)};
-							notice($nick,"I have deleted all responses to the command you requested.");
+							my @tt_rm = split(' ', $args, 2);
+							my $t_rm = $tt_rm[0];
+							my $delts = $db->do("DELETE FROM ATS WHERE CALL=\"".lc($tt_rm[0])."\";");
+							notice($nick,"I will no longer respond when I see '\002$tt_rm[0]\002'.") if ($delts);
 							slog($nick.":DTS:".$args);
 						}
 					}
@@ -639,11 +644,17 @@ sub list {
 		notice($dst, "\002BOT OWNER LIST\002:");
 		foreach (@owner) { notice($dst, "$_"); }
 	}
-
-	if ($option eq 'admins')
+	elsif ($option eq 'admins')
 	{
 		notice($dst, "\002BOT ADMIN LIST\002:");
 		foreach (@admin) { notice($dst, "$_"); }
+	}
+	elsif ($option eq 'ts')
+	{
+		notice($dst, "\002CALL-RESPONSE LIST\002:");
+		while (my($key, $value) = each(%cmd_)) {
+			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$value\002\"");
+		}
 	}	
 }
 sub nick {
@@ -723,11 +734,18 @@ sub wallchan {
 
 }
 sub dbread {
-	my $all = $db->selectall_arrayref("SELECT * FROM CHANNELS;");
-	foreach my $row (@$all) {
-		my ($cname) = @$row;
+	my $chans = $db->selectall_arrayref("SELECT * FROM CHANNELS;");
+	my $tslist = $db->selectall_arrayref("SELECT * FROM ATS;");
+	foreach my $chanrow (@$chans) {
+		my ($cname) = @$chanrow;
 		$channels->{ $cname } = 'db'; 
 	}
+
+	foreach my $tsrow (@$tslist) {
+		my ($call, $response) = @$tsrow;
+		$cmd_{$call} = $response;
+	}
+	
 }
 sub loadconfig {
 	my $dst = shift;
