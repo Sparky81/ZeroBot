@@ -19,8 +19,8 @@ use IO::Handle;
 require HelpTree;
 require Persist;
 
-open ERROR, '>', "error.log" or die "Could not open the error log. $!\n";
-STDERR->fdopen(\*ERROR, 'w') or die "Could not open the error log. $!\n";
+open ERROR, '>', "error.log" or croak "Could not open the error log. $!\n";
+STDERR->fdopen(\*ERROR, 'w') or croak "Could not open the error log. $!\n";
 unlink "pid.zerobot";
 open(PID, ">>pid.zerobot") or confess "Could not open PID file. ($!)\n";
 if (<PID>) {
@@ -650,21 +650,21 @@ sub list {
 			$c_limit++;
 			notice($dst, "$key [$value]");
     		}
-		cluck "Excess of 10 entries in Channels table. Listing may cause lag/flood." if ($c_limit > 10);
+		cluck "$c_limit entries in channels table. Listing may cause lag/flood." if ($c_limit > 10);
 	}
 	elsif ($option eq 'owners')
 	{
 		$o_limit++;
 		notice($dst, "\002BOT OWNER LIST\002:");
 		foreach (@owner) { notice($dst, "$_"); }
-		cluck "Excess of 10 entries in Owners array. Listing may cause lag/flood." if ($o_limit > 10);
+		cluck "$o_limit entries in the owners array. Listing may cause lag/flood." if ($o_limit > 10);
 	}
 	elsif ($option eq 'admins')
 	{
 		$a_limit++;
 		notice($dst, "\002BOT ADMIN LIST\002:");
 		foreach (@admin) { notice($dst, "$_"); }
-		cluck "Excess of 10 entries in Admins array. Listing may cause lag/flood." if ($a_limit > 10);
+		cluck "$a_limit entries in the admins array. Listing may cause lag/flood." if ($a_limit > 10);
 	}
 	elsif ($option eq 'ts')
 	{
@@ -673,7 +673,7 @@ sub list {
 			$t_limit++;
 			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$value\002\"");
 		}
-		cluck "Excess of 10 entries in ATS table. Listing may cause lag/flood." if ($t_limit > 10);
+		cluck "$t_limit entries in the ATs table. Listing may cause lag/flood." if ($t_limit > 10);
 	}
 }
 sub nick {
