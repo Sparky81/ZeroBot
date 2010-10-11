@@ -12,10 +12,21 @@
 
 use strict;
 use warnings;
-use Carp;
+use Carp qw(carp cluck confess croak);
 use DBI;
+use IO::Handle;
+
 require HelpTree;
 require Persist;
+
+open ERROR, '>', "error.log" or die "Could not open the error log. $!\n";
+STDERR->fdopen(\*ERROR, 'w') or die "Could not open the error log. $!\n";
+unlink "pid.zerobot";
+open(PID, ">>pid.zerobot") or confess "Could not open PID file. ($!)\n";
+if (<PID>) {
+	print PID "$$\n";
+	close(PID);
+}
 my $channels = {};
 my (@admin,@owner,$config);
 &loadconfig;
@@ -69,6 +80,7 @@ while (my $input = <$sock>) {
         last;
     }
     elsif ($input =~ /433/) {
+	warn "It appears $me is already in use on ".$config->{IRCserver}.", concatenating to :".$me."-";
         $me = $me.'-';
 		nick($me);
     }
@@ -628,34 +640,41 @@ sub delchan {
 }
 sub list {
 	my ($dst, $option) = @_;
+	my ($o_limit, $a_limit, $t_limit, $c_limit) = 0;
 	$option = lc($option);
 	if ($option eq 'channels')
 	{
 		notice($dst, "\002CHANNEL LIST\002:");
                 notice($dst, "\002Home Channel\002: $config->{homechan}");
 		while (my($key, $value) = each(%$channels)) {
+			$c_limit++;
 			notice($dst, "$key [$value]");
     		}
-
+		cluck "Excess of 10 entries in Channels table. Listing may cause lag/flood." if ($c_limit > 10);
 	}
-
-	if ($option eq 'owners')
+	elsif ($option eq 'owners')
 	{
+		$o_limit++;
 		notice($dst, "\002BOT OWNER LIST\002:");
 		foreach (@owner) { notice($dst, "$_"); }
+		cluck "Excess of 10 entries in Owners array. Listing may cause lag/flood." if ($o_limit > 10);
 	}
 	elsif ($option eq 'admins')
 	{
+		$a_limit++;
 		notice($dst, "\002BOT ADMIN LIST\002:");
 		foreach (@admin) { notice($dst, "$_"); }
+		cluck "Excess of 10 entries in Admins array. Listing may cause lag/flood." if ($a_limit > 10);
 	}
 	elsif ($option eq 'ts')
 	{
 		notice($dst, "\002CALL-RESPONSE LIST\002:");
 		while (my($key, $value) = each(%cmd_)) {
+			$t_limit++;
 			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$value\002\"");
 		}
-	}	
+		cluck "Excess of 10 entries in ATS table. Listing may cause lag/flood." if ($t_limit > 10);
+	}
 }
 sub nick {
 	my $newnick = shift;
@@ -693,11 +712,13 @@ sub cmd_failure {
 	my $ts = get_timestamp();
 	open(LOG, ">>log.txt");
 	print LOG "[$ts] $dst FAILED to audit $cmd\n";
+	cluck "$dst attempted to audit $cmd.";
 	close(LOG);
 	notice($dst, "You are not authorized to audit \002$cmd\002. Your attempt has been logged.");
 }
 sub cmd_notfound {
 	my ($dst, $cmd) = @_;
+	carp "$dst issued $cmd, which could not be found.";
 	notice($dst, "Command \002$cmd\002 is not found. Please check your spelling and try again.");
 }
 sub sysinfo {
@@ -714,17 +735,22 @@ sub sysinfo {
 sub cmd_needmoreparams {
 	my ($dst, $cmd) = @_;
 	$cmd = uc($cmd);
+	carp "$dst issued $cmd, but did not supply enough parameters.";
 	notice($dst, "Not enough parameters for \002$cmd\002.");
 }
 sub cmd_badparams {
 	my ($dst, $cmd) = @_;
 	$cmd = uc($cmd);
+	carp "$dst issued $cmd, but supplied wrong parameters.";
 	notice($dst, "Bad parameters supplied for \002$cmd\002.");
 }
 sub autojoin {
+  	my $ajoin = 0;
     while (my($key, $value) = each(%$channels)) {
         netjoin($key);
+	$ajoin++;
     }
+	cluck "I've joined over $ajoin channels at once." if ($ajoin > 10);
 }
 sub wallchan {
 	my $wall = shift;
