@@ -191,7 +191,7 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'ats') {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
-						} elsif (isop($nick,$channel)) {
+						} elsif ((isowner($from)) or (isadmin($from))) {
 							my @tt = split(' ',$args,2);
 							my $t = $tt[0];
 							my $ttt = $tt[1];
@@ -200,7 +200,7 @@ while (my $input = <$sock>) {
 							if ($row_ats) { notice($nick,"Every time I see '\002$tt[0]\002', I will respond with, '\002$tt[1]\002'.");
 							} else { notice($nick,"Could not add '$tt[0]' into the database. ($DBI::errstr)"); }
 							slog($nick.":ATS:".$args);
-						}
+						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'uinfo') {
 						if (!defined($args)) {
@@ -214,14 +214,14 @@ while (my $input = <$sock>) {
 						if (!defined($args))
 						{
 							cmd_needmoreparams($nick, $cmd);
-						} else {
+						} elsif ((isowner($from)) or (isadmin($from))) {
 							delete $cmd_{lc($args)};
 							my @tt_rm = split(' ', $args, 2);
 							my $t_rm = $tt_rm[0];
 							my $delts = $db->do("DELETE FROM ATS WHERE CALL=\"".lc($tt_rm[0])."\";");
 							notice($nick,"I will no longer respond when I see '\002$tt_rm[0]\002'.") if ($delts);
 							slog($nick.":DTS:".$args);
-						}
+						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'trigger') {
 					if (!defined($args))
