@@ -209,7 +209,6 @@ while (my $input = <$sock>) {
 							my $ttt = $tt[1];
 							$cmd_{lc($t)} = $ttt;
 							my $row_ats = $db->do("INSERT INTO ATS (CALL, RESPONSE) VALUES (\"".lc($tt[0])."\", \"$tt[1]\");");
-							$row_ats->commit();
 							if ($row_ats) { notice($nick,"Every time I see '\002$tt[0]\002', I will respond with, '\002$tt[1]\002'.");
 							} else { notice($nick,"Could not add '$tt[0]' into the database. ($DBI::errstr)"); }
 							slog($nick.":ATS:".$args);
