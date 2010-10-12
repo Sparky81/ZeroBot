@@ -349,8 +349,8 @@ while (my $input = <$sock>) {
 				if ($cmd eq "\1version\1") {
 					notice($nick,"\1VERSION ZeroBot - Perl IRC Bot: Created by the ZeroNET Development Team\1");
 				}
-				if ($cmd eq "\1ping") {
-					notice($nick,"\1PING $args");
+				if ($cmd eq "\1ping\1") {
+					notice($nick,"\1PING $args\1");
 				}
 			}
 		}
