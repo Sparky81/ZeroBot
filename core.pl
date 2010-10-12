@@ -355,8 +355,9 @@ while (my $input = <$sock>) {
 			}
 		}
 		if ($command eq 'KICK') {
-			if ($s[3] eq $me) {
+			if ($s[3] eq $me) {		
 				netjoin($channel);
+				cluck "I was just kicked from $channel";
 			}
 		}
 		if ($command eq 'MODE') {
@@ -413,13 +414,17 @@ sub notice {
 }
 sub kick {
 	my ($chan,$t) = @_;
-	senddata("KICK $chan $t");
+	if ($t ne $me) {
+		senddata("KICK $chan $t");
+	} else { privmsg($chan, "I'm not going to kick myself."); }
 }
 sub kickban {
 	my ($chan,$t) = @_;
-	my @tt = split(' ',$t,2);
-	ban($chan,$tt[0]);
-	senddata("KICK $chan $t");
+	if ($t ne $me) {
+		my @tt = split(' ',$t,2);
+		ban($chan,$tt[0]);
+		senddata("KICK $chan $t");
+	} else { privmsg($chan, "I'm not going to ban myself."); }
 }
 sub mode {
 	my ($chan,$t) = @_;
@@ -700,6 +705,7 @@ sub list {
 sub nick {
 	my $newnick = shift;
 	senddata("NICK $newnick");
+	$me = $newnick;
 }
 sub get_timestamp {
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
