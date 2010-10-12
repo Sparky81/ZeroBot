@@ -27,8 +27,7 @@ if (<PID>) {
 	print PID "$$\n";
 	close(PID);
 }
-my $channels = {};
-my (@admin,@owner,$config);
+my (@admin,@owner,$config,$channels,$quoteslist);
 &loadconfig;
 my $dbargs = {
 	AutoCommit => 1,
@@ -651,15 +650,15 @@ sub delchan {
 }
 sub list {
 	my ($dst, $option) = @_;
-	my ($o_limit, $a_limit, $t_limit, $c_limit) = 0;
+	my ($o_limit, $a_limit, $t_limit, $c_limit, $q_limit) = 0;
 	$option = lc($option);
 	if ($option eq 'channels')
 	{
 		notice($dst, "\002CHANNEL LIST\002:");
                 notice($dst, "\002Home Channel\002: $config->{homechan}");
-		while (my($key, $value) = each(%$channels)) {
+                foreach my $key (sort(keys(%$channels))) {
 			$c_limit++;
-			notice($dst, "$key [$value]");
+			notice($dst, "$key [$$channels{$key}]");
     		}
 		cluck "$c_limit entries in channels table. Listing may cause lag/flood." if ($c_limit > 10);
 	}
@@ -680,11 +679,22 @@ sub list {
 	elsif ($option eq 'ts')
 	{
 		notice($dst, "\002CALL-RESPONSE LIST\002:");
-		while (my($key, $value) = each(%cmd_)) {
+		foreach my $key (sort(keys(%cmd_))) {
 			$t_limit++;
-			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$value\002\"");
+			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$cmd_{$key}\002\"");
 		}
 		cluck "$t_limit entries in the ATs table. Listing may cause lag/flood." if ($t_limit > 10);
+	}
+	elsif ($option eq 'quotes')
+	{
+		notice($dst, "\002QUOTES DATABASE\002:");
+		foreach my $key (sort(keys(%$quoteslist))) {	
+			$q_limit++;
+			notice($dst, "#:\002$key\002, QUOTE:\"\002$$quoteslist{$key}\002\"");
+		}
+
+
+		cluck "$q_limit entires in Quotes table. Listing may cause lag/flood." if ($q_limit > 10);
 	}
 }
 sub nick {
@@ -774,6 +784,9 @@ sub addquote {
 	my ($dst, $quote) = @_;
 	if ($quote) {
 		my $aq_row = $db->do("INSERT INTO QUOTES (QUOTE, CREATOR) VALUES (\"$quote\", \"$dst\");");
+		my $count = $db->selectrow_array("SELECT COUNT(*) FROM QUOTES;");
+		my $q_newnum = $count + 1;
+		$$quoteslist{$q_newnum} = $quote;
 		notice($dst, "Added \"\002$quote\002\" to database.") if $aq_row;
 		notice($dst, "Unable to add quote to database.") if !$aq_row;
 	} else { notice($dst, "You did not supply a quote to add."); }
@@ -782,6 +795,7 @@ sub delquote {
 	my ($dst, $qnum) = @_;
 	if ($qnum) {
 		my $dq_row = $db->do("DELETE FROM QUOTES WHERE QUOTESKEY=\"$qnum\";");
+		delete($$quoteslist{$qnum});
 		notice($dst, "Removed quote \002#$qnum\002 from the database.") if $dq_row;
 		notice($dst, "Could not find \002#$qnum\002 in the database.") if !$dq_row;
 	} else { notice($dst, "You have not defined which number quote to delete."); }
@@ -811,7 +825,11 @@ sub dbread {
 		my ($call, $response) = @$tsrow;
 		$cmd_{$call} = $response;
 	}
-	
+
+	foreach my $quoterow (@$quotes) {
+		my ($n, $q, $c) = @$quoterow;
+		$$quoteslist{$n} = $q;
+	}	
 }
 sub loadconfig {
 	my $dst = shift;
@@ -863,6 +881,7 @@ sub loadconfig {
 		}
 		if ($line =~ m/^addchan:(.+)$/) {
 			$channels->{"$1"} = 'config';
+			netjoin($1) if ($dst);
 			next CONFPARSE;
 		}
 		if ($line =~ m/^nickserv:(.+)$/) {
