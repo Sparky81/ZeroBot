@@ -782,7 +782,7 @@ sub addquote {
 sub delquote {
 	my ($dst, $qnum) = @_;
 	if ($qnum) {
-		my $dq_row = $db->do("DELETE FROM QUOTES WHERE QUOTESKEY=\"$qnum=\";");
+		my $dq_row = $db->do("DELETE FROM QUOTES WHERE QUOTESKEY=\"$qnum\";");
 		notice($dst, "Removed quote \002#$qnum\002 from the database.") if $dq_row;
 		notice($dst, "Could not find \002#$qnum\002 in the database.") if !$dq_row;
 	} else { notice($dst, "You have not defined which number quote to delete."); }
