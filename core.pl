@@ -145,14 +145,14 @@ while (my $input = <$sock>) {
 					elsif ($cmd eq 'list') {
 						list($nick, $args);
 					}
-					elsif ($cmd eq 'kick') {
+					elsif ($cmd =~ m/k(ick)?/i) {
 						if (!defined($args)) { kick($channel,$nick);
 						} elsif  (isop($nick,$channel)) {
 							kick($channel,$args);
 							slog($nick.":KICK:".$channel.":".$args);
 						}
 					}
-					elsif ($cmd eq 'kickban') {
+					elsif ($cmd =~ m/(kickban|kb)/i) {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif (isop($nick,$channel)) {
 							kickban($channel,$args);
