@@ -13,7 +13,8 @@ else
 	sqlite3 zero.db "CREATE TABLE CHANNELS (channel TEXT);"
 	sqlite3 zero.db "CREATE TABLE OWNERS (host TEXT);"
 	sqlite3 zero.db "CREATE TABLE ADMINS (host TEXT);"
-	sqlite3 zero.db "CREATE TABLE ATS (call TEXT,response TEXT);"
-	echo "Creaton completed. If there were errors, check dependencies!"
+	sqlite3 zero.db "CREATE TABLE ATS (call TEXT, response TEXT);"
+	sqlite3 zero.db "CREATE TABLE QUOTES (quoteskey INTEGER PRIMARY KEY, quote TEXT, creator TEXT);"
+	echo "Creaton completed. If there were errors, check dependencies."
 fi
 exit 0

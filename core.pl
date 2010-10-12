@@ -41,9 +41,9 @@ my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
 my $YES;
 
-our @acl_none = ('ATS', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'BAN', 'LIST', 'CALC', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_none = ('ATS', 'ADDQUOTE', 'RANDQUOTE', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
+our @acl_admin = ('ATS', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 use IO::Socket;
@@ -209,6 +209,7 @@ while (my $input = <$sock>) {
 							my $ttt = $tt[1];
 							$cmd_{lc($t)} = $ttt;
 							my $row_ats = $db->do("INSERT INTO ATS (CALL, RESPONSE) VALUES (\"".lc($tt[0])."\", \"$tt[1]\");");
+							$row_ats->commit();
 							if ($row_ats) { notice($nick,"Every time I see '\002$tt[0]\002', I will respond with, '\002$tt[1]\002'.");
 							} else { notice($nick,"Could not add '$tt[0]' into the database. ($DBI::errstr)"); }
 							slog($nick.":ATS:".$args);
@@ -264,6 +265,17 @@ while (my $input = <$sock>) {
                         			if (!defined($args)) { delchan($nick, $channel);
                         			} elsif (isowner($from)) { delchan($nick, $args); }
                         			else { cmd_failure($nick, $cmd); }
+					}
+					elsif ($cmd eq 'randquote') {
+						randquote($nick, $channel);
+					}
+					elsif ($cmd eq 'addquote') {
+						addquote($nick, $args);
+					}
+					elsif ($cmd eq 'delquote') {
+						if ((isadmin($from)) or (isowner($from))) {
+							delquote($nick, $args);
+						} else { cmd_failure($nick, $cmd); }
 					}
 					elsif ($cmd eq 'croak') {
 						if (isowner($from)) { signoff($nick, $args);
@@ -759,9 +771,38 @@ sub wallchan {
     	}
 
 }
+sub addquote {
+	my ($dst, $quote) = @_;
+	if ($quote) {
+		my $aq_row = $db->do("INSERT INTO QUOTES (QUOTE, CREATOR) VALUES (\"$quote\", \"$dst\");");
+		notice($dst, "Added \"\002$quote\002\" to database.") if $aq_row;
+		notice($dst, "Unable to add quote to database.") if !$aq_row;
+	} else { notice($dst, "You did not supply a quote to add."); }
+}
+sub delquote {
+	my ($dst, $qnum) = @_;
+	if ($qnum) {
+		my $dq_row = $db->do("DELETE FROM QUOTES WHERE QUOTESKEY=\"$qnum=\";");
+		notice($dst, "Removed quote \002#$qnum\002 from the database.") if $dq_row;
+		notice($dst, "Could not find \002#$qnum\002 in the database.") if !$dq_row;
+	} else { notice($dst, "You have not defined which number quote to delete."); }
+}
+sub randquote {
+	my ($dst, $channel) = @_;
+        my $count = $db->selectrow_array("SELECT COUNT(*) FROM QUOTES;");
+	if ($count) {
+		my $rand = int(rand($count)) + 1;
+		my $quote = $db->selectall_arrayref("SELECT * FROM QUOTES WHERE QUOTESKEY=\"$rand\";");
+		foreach my $quoterow (@$quote) {
+			my ($n, $q, $c) = @$quoterow;
+			privmsg($channel, "[#] Quote \002$n\002/$count [#] $q [#] Added by \002$c\002. [#]");
+		}
+	} else { privmsg($channel, "There appear to be no quotes in the database. Add some with $$config{trigger}ADDQUOTE."); }
+}
 sub dbread {
 	my $chans = $db->selectall_arrayref("SELECT * FROM CHANNELS;");
 	my $tslist = $db->selectall_arrayref("SELECT * FROM ATS;");
+	my $quotes = $db->selectall_arrayref("SELECT * FROM QUOTES;");
 	foreach my $chanrow (@$chans) {
 		my ($cname) = @$chanrow;
 		$channels->{ $cname } = 'db'; 
