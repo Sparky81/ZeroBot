@@ -27,7 +27,7 @@ if (<PID>) {
 	print PID "$$\n";
 	close(PID);
 }
-my (@admin,@owner,$config,$channels,$quoteslist);
+my ($blacklist,@admin,@owner,$config,$channels,$quoteslist);
 &loadconfig;
 my $dbargs = {
 	AutoCommit => 1,
@@ -41,8 +41,8 @@ my $ht_owner = HelpTree::howner();
 my $YES;
 
 our @acl_none = ('ATS', 'ADDQUOTE', 'RANDQUOTE', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_admin = ('ATS', 'ADDNIG', 'DELNIG', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDNIG', 'DELNIG', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 use IO::Socket;
@@ -275,6 +275,16 @@ while (my $input = <$sock>) {
 							delquote($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
 					}
+					elsif ($cmd eq 'addnig') {
+						if ((isadmin($from)) or (isowner($from))) {
+							addnig($nick, $args);
+						} else { cmd_failure($nick, $cmd) }
+					}
+					elsif ($cmd eq 'delnig') {
+						if ((isadmin($from)) or (isowner($from))) {
+							delnig($nick, $args);
+						} else { cmd_failure($nick, $cmd); }
+					}
 					elsif ($cmd eq 'croak') {
 						if (isowner($from)) { signoff($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
@@ -389,7 +399,12 @@ while (my $input = <$sock>) {
 			$user{lc($s[7])}{'real'} = $real;
 			if ($s[8] =~ m/[\~|\&|\@|\%]/) {
 				$channel{$s[3]}{'ops'}{$s[7]} = time;
-			}	
+			}
+			my $checkhost = $s[7].'!'.$s[4].'@'.$s[5];
+			if (isnig($checkhost)) {
+				privmsg($s[3], "\002$s[7]\002, you match a blacklisted host in my database.") if (isop($s[3], $me));
+				kickban($s[3], $s[7]) if (isop($s[3], $me));
+			}
 		}
 		if ($command eq '353') {
 			who($s[4]);
@@ -511,6 +526,24 @@ sub isadmin {
 			return 1;
 		}
 	}
+}
+sub isnig {
+        my $mask = lc(shift);
+        my @nigregexps = ();
+	foreach my $key (sort(keys(%$blacklist))) {
+		my $regexp = $$blacklist{$key};
+                $regexp =~ s/\./\\\./g;
+                $regexp =~ s/\?/\./g;
+                $regexp =~ s/\*/\.\*/g;
+                $regexp = "^".$regexp."\$";
+                $regexp = lc($regexp);
+                push(@nigregexps,$regexp);
+        }
+        foreach (@nigregexps) {
+                if ($mask =~ m/$_/) {
+                        return 1;
+                }
+        }
 }
 sub isowner {
     my $mask = lc(shift);
@@ -642,7 +675,6 @@ sub delchan {
 	if ($delchan =~ m/^#/) {
 		if ((-e 'zero.db') and ($delchan ne $config->{homechan}) and (defined($channels->{$delchan}))) {
 	        	my $row = $db->do("DELETE FROM CHANNELS WHERE CHANNEL=\"$delchan\";");
-			$db->commit();
 			if (defined($row))
 			{
 				delete($channels->{"$delchan"});
@@ -652,6 +684,43 @@ sub delchan {
 		} elsif ($delchan eq $config->{homechan}) { notice($dst, "Cannot delete \002$delchan\002, it's my home channel."); 
 		} elsif (!$channels->{$delchan}) { notice($dst, "\002$delchan\002 is non-existant."); } else { notice ($dst, "Cannot locate database file."); }
 	} else { notice($dst, "Cannot delete \002$delchan\002 from database: it is not a valid channel, so it won't exist!"); }
+}
+sub addnig {
+	my ($dst, $nighost) = @_;
+	if (!$nighost) {
+		notice($dst, "You did not specify a host to blacklist.");
+		return;
+	}
+	if (($nighost eq '*!*@*') or ($nighost eq '*@*'))
+	{
+		notice($dst, "Banning \002$nighost\002 is too large of a subnet. Be more specific.");
+		return;
+	}
+	if ((isadmin($nighost)) or (isowner($nighost))) {
+		notice($dst, "\002$nighost\002 matches that of an admin/owner, so it will not be added to the blacklist.");
+		return;
+	}
+	if ((isnig($nighost)) or ($$blacklist{$nighost})) {
+		notice ($dst, "\002$nighost\002 already matches a blacklisted host, so there's no reason to add it.");
+		return;
+	}
+	my $row = $db->do("INSERT INTO BLACKLIST (HOST) VALUES (\"$nighost\");");
+	if ($row) {
+		$$blacklist{$nighost} = $nighost;
+		notice($dst, "Added \002$nighost\002 to the blacklist. All users matching this host on their next join to a channel I have +o in will be kickbanned.");
+	} else { notice($dst, "Unable to add \002$nighost\002 to the blacklist."); }
+}
+sub delnig {
+	my ($dst, $nighost) = @_;
+	if ((!isnig($nighost) or (!$$blacklist{$nighost}))) {
+		notice($dst, "\002$nighost\002 does not match a blacklisted host, so there's no use in trying to remove it.");
+		return;
+	}
+	my $row = $db->do("DELETE FROM BLACKLIST WHERE HOST=\"$nighost\";");
+	if ($row) {
+		delete($$blacklist{$nighost});
+		notice($dst, "Removed \002$nighost\002 from the blacklist. Users matching this host will be able to rejoin without being kickbanned.");
+	}
 }
 sub list {
 	my ($dst, $option) = @_;
@@ -701,6 +770,14 @@ sub list {
 
 		cluck "$q_limit entires in Quotes table. Listing may cause lag/flood." if ($q_limit > 10);
 	}
+	elsif ($option eq 'nigs')
+	{
+		foreach my $key (sort(keys(%$blacklist))) {
+			notice($dst, "$$blacklist{$key}");
+		
+		}
+	}
+
 }
 sub nick {
 	my $newnick = shift;
@@ -822,6 +899,8 @@ sub dbread {
 	my $chans = $db->selectall_arrayref("SELECT * FROM CHANNELS;");
 	my $tslist = $db->selectall_arrayref("SELECT * FROM ATS;");
 	my $quotes = $db->selectall_arrayref("SELECT * FROM QUOTES;");
+	my $blacklist_db = $db->selectall_arrayref("SELECT * FROM BLACKLIST;");
+	
 	foreach my $chanrow (@$chans) {
 		my ($cname) = @$chanrow;
 		$channels->{ $cname } = 'db'; 
@@ -835,7 +914,12 @@ sub dbread {
 	foreach my $quoterow (@$quotes) {
 		my ($n, $q, $c) = @$quoterow;
 		$$quoteslist{$n} = $q;
-	}	
+	}
+
+	foreach my $blrow (@$blacklist_db) {
+		my ($host) = @$blrow;
+		$$blacklist{$host} = $host;
+	}
 }
 sub loadconfig {
 	my $dst = shift;

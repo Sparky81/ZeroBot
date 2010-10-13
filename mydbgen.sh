@@ -15,6 +15,7 @@ else
 	sqlite3 zero.db "CREATE TABLE ADMINS (host TEXT);"
 	sqlite3 zero.db "CREATE TABLE ATS (call TEXT, response TEXT);"
 	sqlite3 zero.db "CREATE TABLE QUOTES (quoteskey INTEGER PRIMARY KEY, quote TEXT, creator TEXT);"
+	sqlite3 zero.db "CREATE TABLE BLACKLIST (host TEXT);"
 	echo "Creaton completed. If there were errors, check dependencies."
 fi
 exit 0
