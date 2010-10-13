@@ -113,30 +113,29 @@ while (my $input = <$sock>) {
 			if ($target =~ m/^\#/) { 
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
+					unless($cmd eq 'last') { slog($channel.":".$nick.":".$cmd.":".$args) if ($args); }
+					unless($cmd eq 'last') { slog($channel.":".$nick.":".$cmd) if (!$args); }
 					if ($cmd =~ 'help') {
-					if (!defined $args) {
-                            help($nick, $from);
-                        } else { help_cmd($nick, $from, $args); }
+						if (!defined $args) {
+							help($nick, $from);
+						} else { help_cmd($nick, $from, $args); }
 					}	
 					elsif ($cmd eq 'say') {
 					if (!defined($args)) { cmd_needmoreparams($nick,$cmd);
 					} else {
 							privmsg($channel,$args);
-							slog($nick.":SAY:".$args);
 						}
 					}
 					elsif ($cmd eq 'act') {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} else {
 							act($channel, $args);
-							slog($nick.":ACT:".$args);
 						}
 					}
 					elsif ($cmd eq 'raw') {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif ((isadmin($from)) or (isowner($from))) {
 							senddata($args);
-							slog($nick.":RAW:".$args);
 						}
 					}
 					elsif ($cmd eq 'sysinfo') {
@@ -147,23 +146,20 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd =~ m/k(ick)?/i) {
 						if (!defined($args)) { kick($channel,$nick);
-						} elsif  (isop($nick,$channel)) {
+						} elsif (isop($nick,$channel)) {
 							kick($channel,$args);
-							slog($nick.":KICK:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd =~ m/(kickban|kb)/i) {
 						if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif (isop($nick,$channel)) {
 							kickban($channel,$args);
-							slog($nick.":KICKBAN:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd eq 'ban') {
 						if (!defined($args)) { cmd_needmoreparms($nick, $cmd);
 						} elsif (isop($nick,$channel)) {
 							ban($channel,$args);
-							slog($nick.":BAN:".$channel.":".$args);
 						}
 					}
 					elsif ($cmd =~ m/j(oin)?/i) {
@@ -171,7 +167,6 @@ while (my $input = <$sock>) {
 						} elsif ((isadmin($from)) or (isowner($from))) {
 							netjoin($args);
 							notice($nick,"I have joined: $args");
-							slog($nick.":JOIN:".$args);
 						}
 					}
 					elsif ($cmd eq 'wallchan') {
@@ -180,7 +175,6 @@ while (my $input = <$sock>) {
 							cmd_needmoreparams($nick, $cmd); 
 						} elsif ((isadmin($from)) or (isowner($from))) {
 								wallchan("$args");
-								slog($nick.":WALLCHAN:".$args);
 						}
 					}
 					elsif ($cmd eq 'part') {
@@ -197,7 +191,6 @@ while (my $input = <$sock>) {
 					if (!defined($args)) { cmd_needmoreparams($nick, $cmd);
 						} elsif (isop($nick,$channel)) {
 							unban($channel,$args);
-							slog($nick.":UNBAN:".$args);
 						}
 					}
 					elsif ($cmd eq 'ats') {
@@ -328,7 +321,6 @@ while (my $input = <$sock>) {
 						elsif ($args =~ m/exit(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/notice(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/kill(.*?)/i) { cmd_badparams($nick, $cmd); }
-						elsif ($args =~ m/privmsg(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/unshift(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/push(.+)?/i) { cmd_badparams($nick, $cmd); }
 						elsif ($args =~ m/admin(.+)?/i) { cmd_badparams($nick, $cmd); }
@@ -702,6 +694,10 @@ sub addnig {
 	}
 	if ((isnig($nighost)) or ($$blacklist{$nighost})) {
 		notice ($dst, "\002$nighost\002 already matches a blacklisted host, so there's no reason to add it.");
+		return;
+	}
+	if ($nighost !~ m/^(.*)!(.*)\@(.*)/) {
+		notice($dst, "\002$nighost\002 is not a valid hostmask.");
 		return;
 	}
 	my $row = $db->do("INSERT INTO BLACKLIST (HOST) VALUES (\"$nighost\");");
