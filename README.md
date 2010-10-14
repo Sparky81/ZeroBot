@@ -19,6 +19,21 @@ ZeroBot
 	is available in most repositories. ZeroBot also requires the DBI module to communicate
 	with the SQLite Database. You can install that with:
 	- $ sudo cpan -i DBD::SQLite
+
+*	Dependency List:
+	- Perl 5.10 or later
+	- IO::Socket (core)
+	- IO::Socket::SSL (for SSL support)
+	- DBI [required]
+	- DBD::SQLite [required]
+	- Config::JSON [required]
+	
+	Config::JSON also has dependencies. CPAN will try and install them for you. They are:
+	- Test::Deep
+	- Test::More
+	- List::Util
+	- Moose
+
 	
 *	After installing SQLite, use the following command to generate a database:
 	- $ ./mydbgen

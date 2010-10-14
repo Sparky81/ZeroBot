@@ -12,10 +12,11 @@
 
 use strict;
 use warnings;
+
 use Carp qw(carp cluck confess croak);
 use DBI;
-use IO::Handle;
-
+use Config::JSON;
+my $c = Config::JSON->new(pathToFile => 'zerobot.conf');
 require HelpTree;
 require Persist;
 
@@ -23,18 +24,16 @@ open ERROR, '>', "error.log" or croak "Could not open the error log. $!\n";
 STDERR->fdopen(\*ERROR, 'w') or croak "Could not open the error log. $!\n";
 unlink "pid.zerobot";
 open(PID, ">>pid.zerobot") or confess "Could not open PID file. ($!)\n";
-if (<PID>) {
-	print PID "$$\n";
-	close(PID);
-}
-my ($blacklist,@admin,@owner,$config,$channels,$quoteslist);
+print PID "$$\n";
+close(PID);
+my ($blacklist,$config,@admin,@owner,$sock,$channels,$quoteslist);
 &loadconfig;
 my $dbargs = {
 	AutoCommit => 1,
 	RaiseError => 1 };
 my $db = DBI->connect("dbi:SQLite:dbname=zero.db","","",$dbargs);
 &dbread;
-my $me = $config->{IRCnick};
+my $me = $$config{IRCnick};
 my $ht_none = HelpTree::hnormal();
 my $ht_admin = HelpTree::hadmin();
 my $ht_owner = HelpTree::howner();
@@ -47,7 +46,6 @@ our @modlist = ();
 
 use IO::Socket;
 
-my $sock;
 if ($config->{SSL})
 {
 	require IO::Socket::SSL;
@@ -113,8 +111,8 @@ while (my $input = <$sock>) {
 			if ($target =~ m/^\#/) { 
 				if ($trigger eq $config->{trigger}) {
 					$cmd = substr($cmd,1);
-					unless($cmd eq 'last') { slog($channel.":".$nick.":".$cmd.":".$args) if ($args); }
-					unless($cmd eq 'last') { slog($channel.":".$nick.":".$cmd) if (!$args); }
+					unless($cmd eq 'last') { slog($channel.":".$from.":".$cmd.":".$args) if ($args); }
+					unless($cmd eq 'last') { slog($channel.":".$from.":".$cmd) if (!$args); }
 					if ($cmd =~ 'help') {
 						if (!defined $args) {
 							help($nick, $from);
@@ -919,87 +917,40 @@ sub dbread {
 }
 sub loadconfig {
 	my $dst = shift;
-	open(CONFIG,'zerobot.conf') or croak "Configuration could not be read.\n";
-	my @lines = <CONFIG>;
-	@admin = ();
-	@owner = ();
-	$config = {};
-	close(CONFIG);
-	my $i = 0;
-        while (my($key, $value) = each(%$channels)) {
-		if ($value eq 'config') { delete($channels->{$key}) }
-        }
-	CONFPARSE: foreach my $line (@lines) {
-		$i++;
-		chomp($line);
-		if ($line =~ m/^\#/) {
-			next CONFPARSE;
+	if (-e 'zerobot.conf') {
+		$$config{IRCnick} = $c->get('client/nick');
+		$$config{IRCident} = $c->get('client/ident');
+		$$config{IRCgecos} = $c->get('client/gecos');
+		$$config{IRCserver} = $c->get('IRC/server');
+		$$config{IRCport} = $c->get('IRC/port');
+		$$config{trigger} = $c->get('client/trigger');
+		$$config{homechan} = $c->get('IRC/home');
+		$$config{ns_pass} = $c->get('client/nickserv');
+		$$config{SSL} = $c->get('IRC/ssl');
+	
+		my $confchans = $c->get('channels');
+		my $confowners = $c->get('owners');
+		my $confadmins = $c->get('admins');
+		
+		foreach (@$confchans) {
+			$$channels{$_} = 'config';
 		}
-		if ($line =~ m/^server:(.+)$/) {
-			$config->{'IRCserver'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^port:([\d]+)$/) {
-			$config->{'IRCport'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^ssl:([true|false]+)$/) {
-			$config->{'SSL'} = 1 if ($1 eq 'true');
-			$config->{'SSL'} = 0 unless ($1 eq 'true');
-			next CONFPARSE;
-		}
-		if ($line =~ m/^nick:(.+)$/) {
-			$config->{'IRCnick'} = $1;
-			my $me = $config->{'IRCnick'};
-			next CONFPARSE;
-		}
-		if ($line =~ m/^ident:(.+)$/) {
-			$config->{'IRCident'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^gecos:(.+)$/i) {
-			$config->{'IRCgecos'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^channel:(.+)$/) {
-			$config->{'homechan'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^addchan:(.+)$/) {
-			$channels->{"$1"} = 'config';
-			netjoin($1) if ($dst);
-			next CONFPARSE;
-		}
-		if ($line =~ m/^nickserv:(.+)$/) {
-			$config->{'ns_pass'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^trigger:(.+)$/) {
-			$config->{'trigger'} = $1;
-			next CONFPARSE;
-		}
-		if ($line =~ m/^admin:(.+)$/) {
-			push(@admin,$1);
-			next CONFPARSE;
-		}
-		if ($line =~ m/^owner:(.+)$/) {
-			push(@owner,$1);
-			next CONFPARSE;
-		}
-		if ($line =~ m/^\s/) {
-			next CONFPARSE;
-		}
-		if (defined($dst)) 
-		{ 
-			notice($dst, "Line \002$i\002 of your \002zerobot.conf\002 is invalid!");
-			notice($dst, $line);
-		} else {
-			croak "Line $i of the configuration is invalid. (\"$line\")\n";
-		}
-	}
 
-	if ($dst)
-	{
+		foreach (@$confowners) {
+			push(@owner, $_);
+		}
+
+		foreach (@$confadmins) {
+			push(@admin, $_);
+		}
+	
+	} else {
+		if ($dst) {
+			notice($dst, "FATAL: Could not find zerbot.conf. Do not attempt to run any commands until I have found it.");
+			cluck "Could not find zerbot.conf - this is fatal";
+		} else { croak "Could not find zerbot.conf."; }
+	}
+		if ($dst) {
 		if(!$config->{IRCnick}) { notice($dst, "You have not defined a nickname for the bot. This is required."); }
 		if(!$config->{IRCident}) { notice($dst, "You have not defined an ident for the bot. This is required."); }
 		if(!$config->{IRCport}) { notice($dst, "You have not defined a port for the bot to connect to. This is required."); }
@@ -1007,5 +958,5 @@ sub loadconfig {
 		if(!$config->{IRCgecos}) { notice($dst, "You have not defined a GECOS (realname) for the bot. This is required."); }
 		if(!$config->{trigger}) { notice($dst, "You have not defined a valid command trigger for the bot. This is required."); }
 		if(!$config->{homechan}) { notice($dst, "You ahve not defined a home channel. This is required."); }
-	}
+	} 
 }

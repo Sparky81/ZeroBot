@@ -1,25 +1,51 @@
-# IRC Server to connect to
-server:irc.zeronet.us
-# port to connect on 
-port:6667
-# is the above port ssl or not?
-ssl:false
-# nick to connect with
-nick:Deltron_Zero
-# ident/username to connect with
-ident:Deltron_Zero
-# realname to connect with
-gecos:DemonDays
-# home channel to join
-channel:#ZeroBot
-# identifying to nickserv
-nickserv:NickServPass
-# command trigger (may only be 1 character in length)
-trigger:*
-# bot owner (add as many hosts as you want on separate lines)
-owner:miniCruzer!eyeless@*
-# bot admin (add as many hosts as you want on separate lines)
-admin:*!*@cooper.Staff.AlphaChat.net
-# other channels to join (not home channels)
-addchan:#niggaplz
-addchan:#myden
+# ZeroBot Configuration File: JSON 1
+# 1 = 'yes', 0 = 'no'
+# SAVE AND RENAME AS 'zerobot.conf'
+
+{
+    "IRC" : {
+	  # our server to connect to
+          "server" : "irc.AlphaChat.net",
+          # the port to connect on
+          "port"   : "6697",
+          # is the above port SSL? 1 yes, 0 no
+          "ssl"    : 1,
+          # channel to autojoin after connection
+	  "home"   : "#ZeroBot"
+     },
+     # other channels to join after connection
+     "channels" : [ "#fgt", "#lobby", "#cooper" ],
+     # hostmasks to allow access to owner-only and below commands.
+     # you may add multiple in the same format
+     "owners"   : [ "miniCruzer!eyeless@*",
+                    "*!*@*.dhcp.insightbb.com" ],
+     # hostmasks to allow access to admin-only commands.
+     # you may add mutliple separated by "hostmask", "hostmask"
+     "admins"   : [ "*!k@k" ],
+     
+     "client" : {
+            # the client's nick!*@*
+            "nick"     : "Deltron_Zero",
+            # the client's *!user@*
+            "ident"    : "dz",
+            # the clien'ts *!*@* [realname]
+            "gecos"    : "Demon Days",
+	    # identification to nickserv
+            "nickserv" : "NickServPass",
+            # command prefix. may be 1 alphanumeric character in length.
+            # works best with symbols (!, @, ^, ~, etc)
+            "trigger"  : "*"
+     },
+
+     "set" : {
+            # rejoin a channel after being kicked?
+            "rejoin_on_kick" : 1,
+            # save location for our database
+            "database"       : "zero.db",
+            # autoop all users matching an owner mask?
+            "autoop_owner"   : 1,
+            # autoop all users matching an admin mask?
+            "autoop_admin"   : 0
+     },
+
+}
