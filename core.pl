@@ -26,7 +26,7 @@ unlink "pid.zerobot";
 open(PID, ">>pid.zerobot") or confess "Could not open PID file. ($!)\n";
 print PID "$$\n";
 close(PID);
-my ($blacklist,$config,@admin,@owner,$sock,$channels,$quoteslist);
+my ($greets,$blacklist,$config,@admin,@owner,$sock,$channels,$quoteslist);
 &loadconfig;
 my $dbargs = {
 	AutoCommit => 1,
@@ -276,6 +276,15 @@ while (my $input = <$sock>) {
 							delnig($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
 					}
+					elsif ($cmd eq 'addgreet') {
+						if ((isadmin($from)) or (isowner($from))) {
+							addgreet($nick, $args);
+						} else { cmd_failure($nick, $cmd); }
+					}
+					elsif ($cmd eq 'delgreet') {
+						if ((isadmin($from)) or (isowner($from))) { delgreet($nick, $args);
+						} else { cmd_failure($nick, $cmd); }
+					}
 					elsif ($cmd eq 'croak') {
 						if (isowner($from)) { signoff($nick, $args);
 						} else { cmd_failure($nick, $cmd); }
@@ -367,6 +376,10 @@ while (my $input = <$sock>) {
 		}
 		if ($command eq 'JOIN') {
 			who($channel);
+			if (defined($$greets{lc($n[0])}))
+			{
+				privmsg(substr($channel, 1), "[$n[0]] ".$$greets{lc($n[0])});
+			}
 		}
 		if ($command eq 'PART') {
 			who($channel);
@@ -398,6 +411,10 @@ while (my $input = <$sock>) {
 		}
 		if ($command eq '353') {
 			who($s[4]);
+		}
+		if ($command eq '474') {
+			carp "I've been banned from $s[3]";
+			if ($s[3] ne $$config{homechan}) { privmsg($$config{homechan}, "I've been banned from \002$s[3]\002."); }
 		}
 	}
 }
@@ -642,6 +659,28 @@ sub help_cmd {
 		}
 	}
 }
+sub addgreet {
+	my ($dst, $greet) = @_;
+	if ($greet =~ m/^([A-Za-z]+) (.+)/)
+	{
+		my $gnick = lc($1);
+		my $gmsg = $2;
+		my $row = $db->do("INSERT INTO GREETS (NICK, MSG) VALUES (\"$gnick\", \"$gmsg\");");
+		if ($row) {
+			$$greets{$gnick} = $gmsg;
+			notice($dst, "Each time \002$gnick\002 joins a channel I'm in, I will say: '[$gnick] $gmsg'");
+		} else { notice($dst, "Unable to add a greet message for \002$gnick\002."); }
+	}
+}
+sub delgreet {
+	my ($dst, $nick) = @_;
+	$nick = lc($nick);
+	if ($$greets{$nick}) {
+		my $row = $db->do("DELETE FROM GREETS WHERE NICK=\"$nick\";");
+		notice($dst, "Deleted \002${nick}'s greet message, which was: '\002$$greets{$nick}\002'.");
+		delete($$greets{$nick});
+	} else { notice($dst, "Unable to delete greet message for \002$nick\002."); }
+}
 sub addchan {
 	my ($dst, $newchan) = @_;
 	$newchan = lc($newchan);
@@ -649,7 +688,6 @@ sub addchan {
 		if (-e 'zero.db') {
 			netjoin($newchan);
 			my $row = $db->do("INSERT INTO CHANNELS (CHANNEL) VALUES (\"$newchan\");");
-			$db->commit();
 			if (defined($row))
 			{
 				$channels->{$newchan} = 'db';
@@ -718,9 +756,18 @@ sub delnig {
 }
 sub list {
 	my ($dst, $option) = @_;
-	my ($o_limit, $a_limit, $t_limit, $c_limit, $q_limit) = 0;
+	my ($o_limit, $n_limit, $a_limit, $g_limit, $t_limit, $c_limit, $q_limit) = 0;
 	$option = lc($option);
-	if ($option eq 'channels')
+	if ($option eq 'greets')
+	{
+		notice($dst, "\2GREET LIST\2:");
+		foreach my $key (sort(keys(%$greets))) {
+			$g_limit++;
+			notice($dst, "\2NICK\2: $key, \2GREET\2: \"$$greets{$key}\"");
+		}
+		cluck "$g_limit entries in the greet list. LIsting may cause lag/flood" if ($g_limit > 10);
+	}
+	elsif ($option eq 'channels')
 	{
 		notice($dst, "\002CHANNEL LIST\002:");
                 notice($dst, "\002Home Channel\002: $config->{homechan}");
@@ -751,7 +798,7 @@ sub list {
 			$t_limit++;
 			notice($dst, "CALL: \"\002$key\002\" RESPONSE: \"\002$cmd_{$key}\002\"");
 		}
-		cluck "$t_limit entries in the ATs table. Listing may cause lag/flood." if ($t_limit > 10);
+		cluck "$t_limit entries in the TS table. Listing may cause lag/flood." if ($t_limit > 10);
 	}
 	elsif ($option eq 'quotes')
 	{
@@ -760,17 +807,17 @@ sub list {
 			$q_limit++;
 			notice($dst, "#:\002$key\002, QUOTE:\"\002$$quoteslist{$key}\002\"");
 		}
-
-
 		cluck "$q_limit entires in Quotes table. Listing may cause lag/flood." if ($q_limit > 10);
 	}
 	elsif ($option eq 'nigs')
 	{
+		$n_limit++;
 		foreach my $key (sort(keys(%$blacklist))) {
 			notice($dst, "$$blacklist{$key}");
 		
 		}
-	}
+		cluck "$n_limit entries in niglist. Listing may cause lag/flood" if ($n_limit > 10);
+	} else { notice($dst, "\2".uc($option)."\2 is not a valid flag for \2LIST\2."); }
 
 }
 sub nick {
@@ -894,7 +941,8 @@ sub dbread {
 	my $tslist = $db->selectall_arrayref("SELECT * FROM ATS;");
 	my $quotes = $db->selectall_arrayref("SELECT * FROM QUOTES;");
 	my $blacklist_db = $db->selectall_arrayref("SELECT * FROM BLACKLIST;");
-	
+	my $greetlist = $db->selectall_arrayref("SELECT * FROM GREETS;");
+
 	foreach my $chanrow (@$chans) {
 		my ($cname) = @$chanrow;
 		$channels->{ $cname } = 'db'; 
@@ -913,6 +961,12 @@ sub dbread {
 	foreach my $blrow (@$blacklist_db) {
 		my ($host) = @$blrow;
 		$$blacklist{$host} = $host;
+	}
+
+	foreach my $grow (@$greetlist) {
+		my ($nick, $msg) = @$grow;
+		$nick = lc($nick);
+		$$greets{$nick} = $msg;
 	}
 }
 sub loadconfig {
