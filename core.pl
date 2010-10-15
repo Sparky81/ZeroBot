@@ -71,6 +71,7 @@ my (%user,%channel,%cmd_);
 while (my $input = <$sock>) {
 	$YES = 1;
     if ($input =~ /004/) {
+		senddata("MODE $me +B");
 		autojoin();
 		netjoin($config->{homechan});
 	if ($config->{ns_pass}) { privmsg('NickServ','IDENTIFY '.$config->{ns_pass}); }
