@@ -40,8 +40,8 @@ my $ht_owner = HelpTree::howner();
 my $YES;
 
 our @acl_none = ('ATS', 'ADDQUOTE', 'RANDQUOTE', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'ADDNIG', 'DELNIG', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDNIG', 'DELNIG', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_admin = ('ATS', 'ADDGREET', 'DELGREET', 'ADDNIG', 'DELNIG', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'DELCHAN', 'LIST', 'ADDNIG', 'ADDGREET', 'DELGREET', 'DELNIG', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 use IO::Socket;
@@ -212,6 +212,13 @@ while (my $input = <$sock>) {
 							slog($nick.":UINFO:".$channel.":".$args);
 						}
 					}
+					elsif ($cmd eq 'cfg') {
+						if(!defined($args)) {
+							cmd_needmoreparams($nick, $cmd);
+						} elsif (isowner($from)) {
+							cfg($nick, $args);
+						} else { cmd_failure($nick, $args); }
+					}
 					elsif ($cmd eq 'dts') {
 						if (!defined($args))
 						{
@@ -268,7 +275,7 @@ while (my $input = <$sock>) {
 					}
 					elsif ($cmd eq 'addnig') {
 						if ((isadmin($from)) or (isowner($from))) {
-							addnig($nick, $args);
+							addnig($channel, $nick, $args);
 						} else { cmd_failure($nick, $cmd) }
 					}
 					elsif ($cmd eq 'delnig') {
@@ -379,6 +386,9 @@ while (my $input = <$sock>) {
 			if (defined($$greets{lc($n[0])}))
 			{
 				privmsg(substr($channel, 1), "[$n[0]] ".$$greets{lc($n[0])});
+			}
+			if ((isowner($from) and (isop($me, substr($channel, 1)))) and ($$config{autoop_owner} == 1)) {
+				senddata("MODE ".substr($channel, 1)." +o $n[0]");
 			}
 		}
 		if ($command eq 'PART') {
@@ -570,6 +580,23 @@ sub isowner {
         }
     }
 }
+sub cfg {
+	my ($dst, $setting) = @_;
+	if ($setting =~ m/autoop_owner ([0-1])/i)
+	{
+		$c->set('set/autoop_owner', 1) if ($1 == 1);
+		$c->set('set/autoop_owner', 0) if ($1 == 0);
+		notice($dst, "Will now Auto Op all bot owners if they join a channel I have op in.") if ($1 == 1);
+		notice($dst, "Owners will not be auto opped on join.") if ($1 == 0);
+	}
+	elsif ($setting =~ m/autoop_admin ([0-1])/i)
+	{
+		$c->set('set/autoop_admin', 1) if ($1 == 1);
+		$c->set('set/autoop_admin', 0) if ($1 == 0);
+		notice($dst, "will now Auto Op all bot admins if they join a channel I ahve op in.") if ($1 == 1);
+		notice($dst, "Admins will not be auto opped on join.") if ($1 == 0);
+	} else { notice($dst, "\2$setting\2 is invalid for command \2CFG\2."); }
+}
 sub userinfo {
 	my ($chan,$nick) = @_;
 	if ($user{lc($nick)}) {
@@ -714,7 +741,7 @@ sub delchan {
 	} else { notice($dst, "Cannot delete \002$delchan\002 from database: it is not a valid channel, so it won't exist!"); }
 }
 sub addnig {
-	my ($dst, $nighost) = @_;
+	my ($channel, $dst, $nighost) = @_;
 	if (!$nighost) {
 		notice($dst, "You did not specify a host to blacklist.");
 		return;
@@ -740,6 +767,7 @@ sub addnig {
 	if ($row) {
 		$$blacklist{$nighost} = $nighost;
 		notice($dst, "Added \002$nighost\002 to the blacklist. All users matching this host on their next join to a channel I have +o in will be kickbanned.");
+		who($channel);
 	} else { notice($dst, "Unable to add \002$nighost\002 to the blacklist."); }
 }
 sub delnig {
@@ -981,6 +1009,14 @@ sub loadconfig {
 		$$config{homechan} = $c->get('IRC/home');
 		$$config{ns_pass} = $c->get('client/nickserv');
 		$$config{SSL} = $c->get('IRC/ssl');
+		
+		if (($c->get('set/autoop_owner') == 1) or ($c->get('set/autoop_owner') == 0))
+		{
+			$$config{autoop_owner} = $c->get('set/autoop_owner');
+		} else { 
+			notice($dst, "\2".$c->get('set/autoop_owner')."\2 is not a valid setting for \2set/autoop_owner\2") if ($dst);
+			croak $c->get('set/autoop_owner')." is not a valid setting for set/autoop_owner" if (!$dst);
+		}
 	
 		my $confchans = $c->get('channels');
 		my $confowners = $c->get('owners');
