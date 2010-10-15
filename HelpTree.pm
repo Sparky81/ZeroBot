@@ -45,7 +45,7 @@ our %helptree_a = (
 	DELNIG => 'Remove a host from the blacklist.',
 	ADMIN => 'Checks to see if user is an admin (you are if you\'re seeing this)',
 	JOIN => 'NETJOIN the bot to a channel',
-	TRIGGER => 'Change command trigger. (Current Trigger: .'.&gettrigger.')',
+	TRIGGER => 'Change command trigger.',
 	PART => 'NETPART the bot from a channel',
 	UNBAN => 'Unban an address from the channel ban list.'
 );
@@ -83,7 +83,7 @@ our %helptree_q = (
 	PART => 'NETPART the bot from a channel.',
 	CFG => 'Write changes to the configuration settings.',
 	UNBAN => 'Unban an address from the channel ban list.',
-	TRIGGER => 'Change command trigger. (Current Trigger: '.&gettrigger.')',
+	TRIGGER => 'Change command trigger.',
 	CROAK => 'Force the bot to quit from the server and end its PID ('.$$.').',
 	RESTART => 'Force the bot to disconnect from the server, and restart itself.',
 	WHOAMI => 'View your access level in the channel and/or bot.',
