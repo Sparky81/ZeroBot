@@ -1,6 +1,5 @@
 # Copyright (c) 2010 ZeroNet Development Group
 package HelpTree;
-my $trigger = gettrigger();
 our %helptree = (
 	WHATIS => 'View more information about a specific command',
    	ADDNIG => 'Add a host to the blacklist.',
