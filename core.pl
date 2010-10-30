@@ -19,7 +19,8 @@ use Config::JSON;
 my $c = Config::JSON->new(pathToFile => 'zerobot.conf');
 require HelpTree;
 require Persist;
-
+$SIG{INT} = 'die';
+$SIG{HUP} = 'rehash';
 open ERROR, '>', "error.log" or croak "Could not open the error log. $!\n";
 STDERR->fdopen(\*ERROR, 'w') or croak "Could not open the error log. $!\n";
 unlink "pid.zerobot";
@@ -40,8 +41,8 @@ my $ht_owner = HelpTree::howner();
 my $YES;
 
 our @acl_none = ('ATS', 'ADDQUOTE', 'RANDQUOTE', 'LIST', 'BAN', 'CALC', 'DTS', 'KICK', 'KB', 'SAY', 'LAST', 'ACT', 'PING', 'SYSINFO', 'TRIGGER', 'UNBAN', 'WHOAMI');
-our @acl_admin = ('ATS', 'ADDGREET', 'DELGREET', 'ADDNIG', 'DELNIG', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
-our @acl_owner = ('ATS', 'CFG', 'DELCHAN', 'LIST', 'ADDNIG', 'ADDGREET', 'DELGREET', 'DELNIG', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
+our @acl_admin = ('ATS', 'DUMP', 'ADDGREET', 'DELGREET', 'ADDNIG', 'DELNIG', 'BAN', 'LIST', 'CALC', 'ADDQUOTE', 'RANDQUOTE', 'DELQUOTE', 'CYCLE', 'DTS', 'LAST', 'JOIN', 'KICK', 'KB', 'PING', 'RAW', 'SAY', 'ACT', 'SYSINFO', 'ADMIN', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'WHOAMI', 'WALLCHAN');
+our @acl_owner = ('ATS', 'CFG', 'DUMP', 'DELCHAN', 'LIST', 'ADDNIG', 'ADDGREET', 'DELGREET', 'DELNIG', 'ADDCHAN', 'MODLOAD', 'BAN', 'CALC', 'CYCLE', 'ADDQUOTE', 'DELQUOTE', 'RANDQUOTE', 'DTS', 'LAST', 'KICK', 'KB', 'NICK', 'PING', 'RAW', 'SAY', 'ACT', 'ADMIN', 'SYSINFO', 'JOIN', 'TRIGGER', 'PART', 'UNBAN', 'CROAK', 'RESTART', 'RELOAD', 'WHOAMI', 'WALLCHAN');
 our @modlist = ();
 
 use IO::Socket;
@@ -279,6 +280,11 @@ while (my $input = <$sock>) {
 							addnig($channel, $nick, $args);
 						} else { cmd_failure($nick, $cmd) }
 					}
+                                        elsif ($cmd eq 'dump') {
+                                                if ((isadmin($from)) or (isowner($from))) {
+                                                        &dump($nick);
+                                                } else { cmd_failure($nick, $cmd) }
+                                        }
 					elsif ($cmd eq 'delnig') {
 						if ((isadmin($from)) or (isowner($from))) {
 							delnig($nick, $args);
@@ -526,6 +532,67 @@ sub isop {
 		return 1;
 	}
 	return;
+}
+sub dump {
+  my $dst = shift;
+  open(DUMP, ">dump.txt") or notice $dst, "Could not open file for dumping. ($!)" and return;
+  
+  # Dump Channels:
+  print DUMP "channels {\n";
+  foreach my $key (sort(keys(%$channels))) {
+    print DUMP "\t$key => '$$channels{$key}'\n";
+  }
+  print DUMP "};\n\n";
+
+  # Dump Admins:
+  print DUMP "admins {\n";
+  foreach (@admin) {
+    print DUMP "\t'$_'\n";
+  }
+  print DUMP "};\n\n";
+
+  # Dump Owners
+  print DUMP "owners {\n";
+  foreach (@owner) {
+    print DUMP "\t'$_'\n";
+  }
+  print DUMP "};\n\n";
+
+  # Dump Users 
+  print DUMP "users {\n";
+  while (my($key, $value) = each(%user)) {
+    print DUMP "\t$key => '$value'\n";
+  }
+  print DUMP "};\n\n";
+
+  # Dump Who
+  print DUMP "who {\n";
+  while (my($key, $value) = each(%channel)) {
+    print DUMP "\t$key => '$value'\n";
+  }
+  print DUMP "};\n\n";
+
+  print DUMP "ts {\n";
+  while (my($key, $value) = each(%cmd_)) {
+   print DUMP "\t$key => '$value'\n";
+  }
+  print DUMP "};\n\n";
+
+  print DUMP "quotes {\n";
+  while (my($key, $value) = each(%$quoteslist)) {
+    print DUMP "\t$key => '$value'\n";
+  }
+  print DUMP "};\n\n";
+
+  print DUMP "greets {\n";
+  while (my($key, $value) = each(%$greets)) {
+    print DUMP "\t$key => '$value'\n";
+  }
+  print DUMP "};\n\n";
+
+  print DUMP ":EOF\n";
+  close(DUMP) or notice $dst, "Could not save dumpfile. ($!)";
+  notice $dst, "Dump complete and saved to \2dump.txt\2.";
 }
 sub isadmin {
 	my $mask = lc(shift);
@@ -853,6 +920,9 @@ sub nick {
 	my $newnick = shift;
 	senddata("NICK $newnick");
 	$me = $newnick;
+}
+sub die {
+  senddata("QUIT :Caught SIGINT, exiting.");
 }
 sub get_timestamp {
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
