@@ -282,7 +282,7 @@ while (my $input = <$sock>) {
 					}
                                         elsif ($cmd eq 'dump') {
                                                 if ((isadmin($from)) or (isowner($from))) {
-                                                        &dump($nick);
+                                                        &dump($nick, $args);
                                                 } else { cmd_failure($nick, $cmd) }
                                         }
 					elsif ($cmd eq 'delnig') {
@@ -533,10 +533,23 @@ sub isop {
 	}
 	return;
 }
+sub timestamp {
+  my $now = time;
+  return $now;
+}
+sub now {
+  my $now = localtime;
+  return $now;
+}
 sub dump {
-  my $dst = shift;
+  my ($dst, $opt) = @_;
   open(DUMP, ">dump.txt") or notice $dst, "Could not open file for dumping. ($!)" and return;
   
+  print DUMP "NOW => (\n";
+  print DUMP "\tTIMESTAMP => '".&timestamp."'\n";
+  print DUMP "\tLOCAL => '".&now."'\n";
+  print DUMP ");\n\n";
+
   # Dump Channels:
   print DUMP "channels {\n";
   foreach my $key (sort(keys(%$channels))) {
