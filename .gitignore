@@ -1,3 +1,4 @@
 config.pl
 log.txt
 *.db
+dump.*

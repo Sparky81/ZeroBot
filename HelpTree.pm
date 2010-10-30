@@ -24,7 +24,7 @@ our %helptree_a = (
 	CALC => 'Calculate an expression.',
 	ADDGREET => 'Add a message to print to the channel when a specific user joins.',
 	DELGREET => 'Remove a greet message for a user.',
-        RANDQUOTE => 'Get a random quote from the database. (Added via ADDQUOTE)',
+  RANDQUOTE => 'Get a random quote from the database. (Added via ADDQUOTE)',
 	DELQUOTE => 'Remove a quote from the database. Specify which number to remove.',
         ADDQUOTE => 'Add a quote to the database.',
 	CYCLE => 'Have the bot cycle (part/join) a channel',
@@ -46,7 +46,8 @@ our %helptree_a = (
 	JOIN => 'NETJOIN the bot to a channel',
 	TRIGGER => 'Change command trigger.',
 	PART => 'NETPART the bot from a channel',
-	UNBAN => 'Unban an address from the channel ban list.'
+  DUMP => 'Dump internal state (variables) to a text file humanly readable. This is similar to the LIST command.',
+  UNBAN => 'Unban an address from the channel ban list.'
 );
 our %helptree_q = (
 	ATS => 'Associate word with response.',
@@ -66,6 +67,8 @@ our %helptree_q = (
         ADDGREET => 'Add a message to print to the channel when a specific user joins.',
         DELGREET => 'Remove a greet message for a user.',
 	DTS => 'Delete a word association.',
+    DUMP => 'Dump internal state (variables) to a text file humanly readable. This is similar to the LIST command.',
+
 	JOIN => 'Have bot join a channel.',
 	PING => 'For users to check if they\'re still alive.',
 	KICK => 'Kick a user from a channel.',
