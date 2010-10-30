@@ -356,6 +356,7 @@ while (my $input = <$sock>) {
 								my $result = eval($args); 
 								privmsg($channel,"\002$nick\002: $args = $result") if defined $result;
 								privmsg($channel,"\002$nick\002: Error.") unless defined $result;
+                privmsg($channel, "$@") if $@;
 						}
 					}
 				}
@@ -949,7 +950,7 @@ sub get_timestamp {
 }
 sub slog {
 	my $data = shift;
-	my $ts = get_timestamp();
+	my $ts = now();
 	open(LOG, ">>log.txt");
 	print LOG "[$ts] $data\n";
 	close(LOG);
