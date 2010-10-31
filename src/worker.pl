@@ -25,7 +25,6 @@ sleep(3);
 netjoin $config->{homechan};
 while (my $buffer = <$Sock::sock>)
 {
-  print $buffer;
   chop $buffer;
   $buffer =~ s/^\s+//g;
   $buffer =~ s/\s+$//g;
@@ -54,8 +53,6 @@ while (my $buffer = <$Sock::sock>)
       if ($target =~ m/^\#/) {
         if ($trigger eq $config->{trigger}) {
           $cmd = substr($cmd,1);
-          msg $channel, "Channel=$channel, Nick=$nick, Cmd=$cmd" if !$args;
-          msg $channel, "Channel=$channel, Nick=$nick, Cmd=$cmd, Args=$args" if $args;
           if (exists $chancmds{$cmd})
           {
             $chancmds{$cmd}{code}->($channel, $nick, $args) if $args;
