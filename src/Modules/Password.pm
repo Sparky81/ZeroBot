@@ -3,7 +3,7 @@ package Modules::Password;
 use strict;
 use warnings;
 use Module;
-
+use Message;
 our ($password, $_rand);
 
 cmd_add_chan({

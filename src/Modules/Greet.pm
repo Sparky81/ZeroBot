@@ -2,7 +2,7 @@
 package Modules::Greet;
 use strict;
 use warnings;
-use ServerCommands;
+use Commands::Server;
 use Module;
 use Message;
 

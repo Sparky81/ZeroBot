@@ -23,6 +23,7 @@ cmd_add_chan({
   code => sub {
     my ($channel, $dst, $module) = @_;
     modload $module;
+    notice $dst, "Loaded $module";
   }
 });
 
@@ -32,9 +33,6 @@ cmd_add_chan({
   acl => 'owner',
   code => sub {
     my ($channel, $dst, $module) = @_;
-    $module = tr/::/\//;
-    $module = $module.".pm";
-    print $module;
     modunload $module;
   }
 });

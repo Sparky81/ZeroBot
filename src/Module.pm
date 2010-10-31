@@ -8,7 +8,7 @@ use Module::Load;
 our @EXPORT = qw(
   cmd_add_chan cmd_add_privmsg cmd_add_numeirc
   cmd_del_chan cmd_del_privmsg cmd_del_numeirc
-  %chancmds %privmsgcmds %numericcmds
+  %chancmds %privmsgcmds %numericcmds modload
 );
 
 our (%chancmds, %privmsgcmds, %numericcmds);
@@ -69,9 +69,16 @@ sub cmd_del_numeric {
 }
 
 sub modload {
-  foreach (@module) {
-    load $_;
+  my $mod = shift;
+  if (!$mod)
+  {
+    @module = ();
+    foreach (@module) {
+     load $_;
+    }
+    return;
   }
+  load $mod if $mod;
 }
 
 sub modunload {
