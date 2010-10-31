@@ -33,6 +33,25 @@ if (eval {
 }
 
 if (eval {
+  require DBD::SQLite;
+  1;
+}) {
+  print "SQLite Support enabled.\n";
+} else {
+  print "DBD::SQLite not installed. This is required.\n";
+}
+
+if (eval {
+  require DBI;
+  1;
+}) {
+  print "DBI found\n";
+} else {
+  print "DBI not found. This is required to connect to a database.\n";
+}
+
+
+if (eval {
   require Moose;
   1;
 }) {
