@@ -22,8 +22,16 @@ cmd_add_chan({
   acl => 'owner',
   code => sub {
     my ($channel, $dst, $module) = @_;
-    modload $module;
-    notice $dst, "Loaded $module";
+    if (eval {
+      modload $module;
+      1;
+    }) {
+      modload $module;
+      notice $dst, "Loaded $module";
+    } else {
+      notice $dst, "Cannot find \2$module\2";
+      return;
+    }
   }
 });
 
@@ -34,6 +42,46 @@ cmd_add_chan({
   code => sub {
     my ($channel, $dst, $module) = @_;
     modunload $module;
+  }
+});
+
+cmd_add_chan({
+  cmd => 'restart',
+  help => 'Disconnect from IRC, kill the current process, and start bot again.',
+  acl => 'admin',
+  code => sub {
+    my ($channel, $dst, $reason) = @_;
+    if (!$reason) {
+      &Sock::close("RESTART by \2$dst\2 (No reason given.)");
+      system "../../bot.sh";
+      die;
+    }
+    elsif ($reason) {
+      &Sock::close("RESTART by \2$dst\2 ($reason)");
+      system "../bot.sh";
+      die;
+    }
+  }
+});
+
+cmd_add_chan({
+  cmd => 'die',
+  help => 'Disconnect from IRC, and kill the current process ('.$$.')',
+  acl => 'owner',
+  code => sub {
+    my ($channel, $dst, $reason) = @_;
+      &Sock::close("DIE by \2$dst\2 (".($reason ? 'No reason given' : "$reason").")");
+      die;
+  }
+});
+
+cmd_add_chan({
+  cmd => 'rehash',
+  help => 'Re-read database and zerobot.conf.',
+  code => sub {
+    my ($channel, $dst) = @_;
+    Conf::load();
+    notice $dst, "Configuration reloaded.";
   }
 });
 

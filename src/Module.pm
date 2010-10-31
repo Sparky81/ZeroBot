@@ -74,7 +74,11 @@ sub modload {
   {
     @module = ();
     foreach (@module) {
-     load $_;
+      if (eval { require $_; 1; }) {
+        load $_;
+      } else {
+        return
+      }
     }
     return;
   }
