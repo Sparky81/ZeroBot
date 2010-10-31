@@ -34,9 +34,12 @@ ZeroBot
 	- List::Util
 	- Moose
 
-	
+* This version uses a configure script to check if you have the needed dependencies. Do not have to
+  run this, although its helpful in finding the modules that need to be installed.
+  * $ ./configure
+
 *	After installing SQLite, use the following command to generate a database:
 	- $ ./mydbgen
 
 *	Once installed use this to start the bot:
-	- $ ./core.pl &
+	- $ ./bot.sh
