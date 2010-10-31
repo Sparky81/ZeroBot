@@ -32,6 +32,8 @@ sub load {
   $$config{ident} = $c->get('client/ident');
   $$config{gecos} = $c->get('client/gecos');
 
+  $$config{trigger} = $c->get('client/trigger');
+
   @owner = $c->get('owners');
   @admin = $c->get('admins');
   my @chan = $c->get('channels');

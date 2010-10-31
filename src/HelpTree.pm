@@ -1,5 +1,43 @@
 # Copyright (c) 2010 ZeroNet Development Group
+use strict;
+use warnings;
+use Module;
+use Message;
+use Conf;
+use base 'Exporter';
+our @EXPORT = qw(shorthelp help help_cmd);
 package HelpTree;
+our @cmds;
+
+sub conf {
+  my $directive = shift;
+  return $c->get($directive);
+}
+
+sub shorthelp {
+  foreach (sort keys %commands) {
+    push @cmds($_);
+  }
+}
+
+sub help {
+  my $dst = shift;
+  shorthelp();
+  notice $dst "You have access to the following commands. To see more information about each, use ".&conf('client/trigger')."HELP \2COMMAND\2.";
+  notice $dst, "@cmds";
+}
+
+sub help_cmd {
+  my ($dst, $cmd) = @_;
+  if (!exists $commands{$cmd})
+  {
+    notice $dst, "\2".uc($cmd)."\2 not found.";
+  }
+
+  notice $dst, "\2".uc($cmd)."\2: $commands{$cmd}";
+}
+
+=head1
 our %helptree = (
 	WHATIS => 'View more information about a specific command',
    	ADDNIG => 'Add a host to the blacklist.',
@@ -95,5 +133,5 @@ our %helptree_q = (
 sub hnormal { return \%helptree; }
 sub hadmin { return \%helptree_a; }
 sub howner { return \%helptree_q; }
-
+=cut
 1;

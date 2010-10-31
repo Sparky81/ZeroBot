@@ -3,7 +3,8 @@ use strict;
 use warnings;
 package Message;
 use Sock;
-
+use base 'Exporter';
+our @EXPORT = qw(msg notice act);
 sub msg {
   my ($target, $msg) = @_;
   puts "PRIVMSG $target :$msg";

@@ -1,4 +1,6 @@
-config.pl
 log.txt
 *.db
 dump.*
+zerobot.conf
+pid.*
+error.log
