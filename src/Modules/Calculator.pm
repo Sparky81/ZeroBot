@@ -1,25 +1,32 @@
 # Copyright (c) 2010 Samuel Hoffman
-require Persist;
+package Modules::Calculator;
+use strict;
+use warnings;
+use Message;
+use Module;
 use WWW::Google::Calculator;
-modinit('None',	'CALCULATOR', 'Use Google Calculator to evaluate an expression.');
-my $calc = WWW::Google::Calculator->new;
 
-my $cmd = our $cmd_export;
-my $args = our $args_export;
-my $channel = our $channel_export;
+our ($calc, $result);
 
-if ($cmd eq 'gcalc')
-{
-	if(defined($args)) {
-		my $result = gcalc($channel, $args);
-		privmsg($channel, $result);
-	}
-}
+$calc = WWW::Google::Calculator->new;
 
-sub gcalc {
-	my ($dst, $exp) = @_;
-	privmsg($dst, $calc->calc("$exp"));
-	return $calc->calc("$exp");	
-}
-glob *gcalc;
+command_add({
+  cmd => 'calc',
+  help => 'Evaluate an expression using Google\'s Calculator.',
+  code => sub {
+    my ($dst, $expr) = @_;
+
+    if (!eval {
+      require WWW::Google::Calculator;
+      1;
+    }) {
+      notice $dst, "Please install WWW::Google::Calculator before running this command.";
+      return;
+    }
+
+    $result = $calc->calc("$expr");
+    notice $dst, $result;
+  }
+});
+
 1;
