@@ -5,8 +5,8 @@ package Conf;
 use Config::JSON;
 use Cwd;
 use base 'Exporter';
-our @EXPORT = qw(load set get delete @module $modules $c $config $channels @admin @owner);
-our ($modules, $c, $config, $channels, @admin, @owner, @module);
+our @EXPORT = qw(load set get delete @module $modules $c $config $channels @admin @owner $blacklist);
+our ($modules, $c, $config, $channels, @admin, @owner, @module, $blacklist);
 my $path = &getpath;
 $c = Config::JSON->new($path);
 
@@ -23,6 +23,8 @@ sub getpath {
 }
 
 sub load {
+  @owner = ();
+  @admin = ();
   $$config{server} = $c->get('IRC/server');
   $$config{ssl} = $c->get('IRC/ssl');
   $$config{port} = $c->get('IRC/port');
@@ -34,18 +36,25 @@ sub load {
 
   $$config{trigger} = $c->get('client/trigger');
 
-  @owner = $c->get('owners');
-  @admin = $c->get('admins');
-  my @chan = $c->get('channels');
-  foreach (@chan) {
+  my $ownerlist = $c->get('owners');
+  foreach (@$ownerlist) {
+    push @owner, $_;
+  }
+
+  my $adminlist = $c->get('admins');
+  foreach (@$adminlist) {
+    push @admin, $_;
+  }
+
+  my $chanlist = $c->get('channels');
+  foreach (@$chanlist) {
     $$channels{$_} = 'config';
   }
 
-  @module = $c->get('modules');
-  foreach (@module) {
+  my $modlist = $c->get('modules');
+  foreach (@$modlist) {
     $$modules{$_} = 'config';
   }
-
 }
 
 sub set {

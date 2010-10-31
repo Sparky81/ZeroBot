@@ -35,7 +35,7 @@ sub kick {
 }
 
 sub who {
-  my ($channel) = @_;
+  my ($channel) = shift;
   puts "WHO $channel";
 }
 

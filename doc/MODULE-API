@@ -1,0 +1,21 @@
+package Modules::Command; # What are we calling this?
+use strict;
+use warnings;
+use Module; # This is a module that can be loaded runtime
+use Message; # We want to be able to communicate back using a PRIVMSG/NOTICE
+use System; # We want to access user@hosts of certain users
+
+cmd_add_chan({
+	cmd => 'command' # name of the command
+	help => 'How to use', # what users will see on HELP command
+	acl => 'op', # user must be an op
+	code => sub {
+		# what to do when this is called
+		my ($chan, $nick, $args) = @_; # variables will always come in this order
+		my $host = $user{$nick}{host}; # host of the person who sent the command
+		notice $nick, "Your host: $host"; # notice back to the person who sent the command
+		msg $chan, "$nick's host: $host"; # privmsg back to the channel where the command was called
+	}
+});
+
+1; # End with this

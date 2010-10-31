@@ -5,6 +5,7 @@ use warnings;
 use Message;
 use HelpTree;
 use Module;
+use System;
 
 cmd_add_chan({
   cmd => 'help',
@@ -82,6 +83,22 @@ cmd_add_chan({
     my ($channel, $dst) = @_;
     Conf::load();
     notice $dst, "Configuration reloaded.";
+  }
+});
+
+cmd_add_chan({
+  cmd => 'whoami',
+  help => 'Check your status on the bot.',
+  code => sub {
+    my ($chan, $dst) = @_;
+    my $host = $dst.'!'.$user{lc($dst)}{ident}.'@'.$user{lc($dst)}{host};
+    my $admin = ACL::isadmin($host);
+    my $owner = ACL::isowner($host);
+    my $op = ACL::isop($chan, $dst);
+    notice $dst, "Checked against host '$host'";
+    notice $dst, "Admin: $admin";
+    notice $dst, "Owner: $owner";
+    notice $dst, "Op: $op";
   }
 });
 
