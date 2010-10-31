@@ -22,6 +22,7 @@ sub shorthelp {
 
 sub help {
   my $dst = shift;
+  @chancmds = ();
   shorthelp();
   notice $dst, "You have access to the following commands. To see more information about each, use ".&conf('client/trigger')."HELP \2COMMAND\2.";
   notice $dst, "@chancmds";

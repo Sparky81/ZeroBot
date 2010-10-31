@@ -8,7 +8,7 @@ our ($password, $_rand);
 
 cmd_add_chan({
   cmd => 'passwd',
-  help => 'Generate a random password. Default length is 20 characters.',
+  help => 'Generate a random password. Default length is 10 characters.',
   code => sub {
   	my ($chan, $dst, $length) = @_;
     
