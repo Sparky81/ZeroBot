@@ -6,11 +6,11 @@ use Module;
 
 our ($password, $_rand);
 
-command_add({
+cmd_add_chan({
   cmd => 'passwd',
   help => 'Generate a random password. Default length is 20 characters.',
   code => sub {
-  	my ($dst, $length) = @_;
+  	my ($chan, $dst, $length) = @_;
     
   	if (!$length) {
          	$length = 10;

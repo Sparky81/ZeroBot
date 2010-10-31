@@ -10,16 +10,13 @@ our ($calc, $result);
 
 $calc = WWW::Google::Calculator->new;
 
-command_add({
+cmd_add_privmsg({
   cmd => 'calc',
   help => 'Evaluate an expression using Google\'s Calculator.',
   code => sub {
-    my ($dst, $expr) = @_;
+    my ($chan, $dst, $expr) = @_;
 
-    if (!eval {
-      require WWW::Google::Calculator;
-      1;
-    }) {
+    if (!eval { require WWW::Google::Calculator; 1; }) {
       notice $dst, "Please install WWW::Google::Calculator before running this command.";
       return;
     }

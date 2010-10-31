@@ -5,8 +5,8 @@ package Conf;
 use Config::JSON;
 use Cwd;
 use base 'Exporter';
-our @EXPORT = qw(load set get delete $c $config $channels @admin @owner);
-our ($c, $config, $channels, @admin, @owner);
+our @EXPORT = qw(load set get delete @module $modules $c $config $channels @admin @owner);
+our ($modules, $c, $config, $channels, @admin, @owner, @module);
 my $path = &getpath;
 $c = Config::JSON->new($path);
 
@@ -40,6 +40,12 @@ sub load {
   foreach (@chan) {
     $$channels{$_} = 'config';
   }
+
+  @module = $c->get('modules');
+  foreach (@module) {
+    $$modules{$_} = 'config';
+  }
+
 }
 
 sub set {

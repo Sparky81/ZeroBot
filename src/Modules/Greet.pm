@@ -8,23 +8,23 @@ use Message;
 
 our ($greets);
 
-command_add({
+cmd_add_chan({
   cmd => 'addgreet',
   acl => 'admin',
   help => 'Add a greet message to be displayed each time a specified user joins a channel.',
   code => sub {
-    my ($dst, $nick, $msg) = @_;
+    my ($chan, $dst, $nick, $msg) = @_;
     $$greets{lc($nick)} = $msg;
     notice $dst, "Added greet for \2$nick\2.";
   }
 });
 
-command_add({
+cmd_add_chan({
   cmd => 'delgreet',
   acl => 'admin',
   help => 'Remove a greet message.',
   code => sub {
-    my ($dst, $nick) = @_;
+    my ($chan, $dst, $nick) = @_;
     if (!$$greets{lc($nick)}) {
       notice $dst, "\2$nick\2 does not have a greet message.";
       return;
@@ -34,11 +34,11 @@ command_add({
   }
 });
 
-command_add({
+cmd_add_chan({
   cmd => 'listgreets',
   help => 'List all greets in the system',
   code => sub {
-    my $dst = shift;
+    my ($chan, $dst) = @_;
     notice $dst, "Greet List:";
     foreach (sort keys %$greets) {
       notice $dst, "\2NICK\2: $_, \2GREET\2: $$greets{$_}";
