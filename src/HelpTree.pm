@@ -16,7 +16,7 @@ sub conf {
 
 sub shorthelp {
   foreach (sort keys %chancmds) {
-    push @chancmds, $_;
+    push @chancmds, uc($_);
   }
 }
 
