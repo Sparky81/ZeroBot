@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+
+if (eval {
+  require base;
+  require IO::Socket;
+  require Carp;
+  require Socket;
+  1;
+  })
+{
+  print "Core modules look okay.\n";
+} else {
+  print "Missing a core module!\n";
+}
+
+if (eval {
+  require IO::Socket::SSL;
+  1;
+})
+{
+  print "SSL Okay\n";
+} else {
+    print "SSL not available (install IO::Socket::SSL\n";
+}
+
+if (eval {
+  require Config::JSON;
+  1;
+}) {
+  print "Configuration file parser okay\n";
+} else {
+  print "Config file parser not found! install Config::JSON!\n";
+}
+
+if (eval {
+  require Moose;
+  1;
+}) {
+  print "Moose found.\n";
+} else {
+  print "Moose not found! This may be required in the future.\n";
+}
+
+exit 0;
