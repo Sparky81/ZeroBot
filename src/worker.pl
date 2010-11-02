@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright (c) 2010 Samuel Hoffman
+# Copyright (c) 2010 Mitchel Cooper
 use strict;
 use warnings;
 use Carp qw(cluck confess carp);
@@ -39,7 +40,7 @@ while (my $buffer = <$Sock::sock>)
   if ($buffer =~ /^PING(.*)$/i) {
     puts("PONG $1");
   }
-  unless ($nick eq $me) {
+  unless ($nick eq $me) {  
     if ($command eq 'PRIVMSG')
     {
       my $cmd = $s[3];
@@ -99,6 +100,11 @@ while (my $buffer = <$Sock::sock>)
     }
     if ($command eq 'JOIN')
     {
+      $channel = substr $channel, 1;
+      foreach (sort keys %jcmds)
+      {
+        $jcmds{$_}{code}->($channel, $n[0]);
+      }
       who $channel;
     }
     if ($command eq 'PART')

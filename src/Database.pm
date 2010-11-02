@@ -1,15 +1,19 @@
 # Copyright (c) 2010 Samuel Hoffman
+package Database;
 use strict;
 use warnings;
 use DBI;
 use DBD::SQLite;
+use base 'Exporter';
+our @EXPORT = qw($db);
 
-sub getrow {
-  my ($table) = shift;
-}
+our ($db, $dbargs);
 
-sub getvalue {
-  my ($table, value) = @_;
-}
+$dbargs = {
+  AutoCommit => 1,
+  RaiseError => 1 
+};
+                  
+$db = DBI->connect("dbi:SQLite:dbname=zero.db","","",$dbargs);
 
 1;

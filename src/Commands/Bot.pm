@@ -71,7 +71,7 @@ cmd_add_chan({
   acl => 'owner',
   code => sub {
     my ($channel, $dst, $reason) = @_;
-      &Sock::close("DIE by \2$dst\2 (".($reason ? 'No reason given' : "$reason").")");
+      &Sock::close("DIE by \2$dst\2 (".($reason ? "$reason" : "No reason given.").")");
       die;
   }
 });
